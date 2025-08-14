@@ -17,6 +17,7 @@
   button,input,select{font:inherit}
   .app{display:grid;grid-template-columns:1fr 360px;gap:8px;height:100%;padding:8px}
   .views{
+    position:relative;
     display:grid;
     grid-template-columns:1fr 1fr;
     grid-template-rows:1fr 1fr;
@@ -36,6 +37,7 @@
   .hud{position:absolute;left:8px;top:8px;background:#0008;border-radius:4px;padding:4px 8px;font-size:12px}
   .toolbar{position:absolute;right:8px;top:8px;display:flex;gap:6px}
   .toolbar button{background:#0009;color:#fff;border:1px solid #333;border-radius:4px;padding:3px 6px;cursor:pointer}
+  #viewToolbar{left:8px;right:auto}
   .sidebar{overflow:auto;background:#111;border:1px solid #222;border-radius:6px;padding:10px}
   .grp{border:1px solid #222;border-radius:8px;background:#141414;margin:10px 0;padding:10px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -67,6 +69,13 @@
   <div class="app" id="appRoot">
     <!-- ===== Views area ===== -->
     <div class="views" id="viewsWrap">
+      <div class="toolbar" id="viewToolbar">
+        <button class="btn" id="tbVmQuad">Quad</button>
+        <button class="btn" id="tbVm3d">3D</button>
+        <button class="btn" id="tbVmPlan">Plan</button>
+        <button class="btn" id="tbVmFront">Front</button>
+        <button class="btn" id="tbVmSide">Side</button>
+      </div>
       <!-- 3D -->
       <div class="pane active" id="pane-3d">
         <canvas id="c3d"></canvas>
@@ -244,6 +253,8 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v??0)));
 const mm=v=>Number(v||0);
 const COLORS={ post:'#f5dfe0', lintel:'#e8e8e8', rail:'#c9e1ff', support:'#f6c16c', bin:'rgba(255,179,179,.65)', line:'#cfcfcf', dash:'#d8a7ad' };
 function rgba(hex,a){const c=hex.replace('#','');const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);return `rgba(${r},${g},${b},${a})`;}
+
+let lastModel=null;
 
 /* =====================
    State (S)
@@ -444,17 +455,17 @@ function render3D(M){
 }
 function bind3DInteractions(){
   const cvs=c3d(); if(!cvs) return;
-  cvs.addEventListener('dblclick', ()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); });
-  cvs.addEventListener('wheel', e=>{ zoom=clamp(zoom+(e.deltaY>0?0.1:-0.1),0.5,3); renderAll(); }, {passive:true});
+  cvs.addEventListener('dblclick', ()=>{ yaw=0.5; pitch=0.3; zoom=1; renderViews(); });
+  cvs.addEventListener('wheel', e=>{ zoom=clamp(zoom+(e.deltaY>0?0.1:-0.1),0.5,3); renderViews(); }, {passive:true});
   let drag=false,lx=0,ly=0;
   cvs.addEventListener('mousedown',e=>{ drag=true; lx=e.clientX; ly=e.clientY; });
   window.addEventListener('mouseup',()=>drag=false);
-  window.addEventListener('mousemove',e=>{ if(!drag) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; yaw+=dx*0.01; pitch=clamp(pitch+dy*0.01,-1.1,1.1); renderAll(); });
-  document.getElementById('tbFit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
-  document.getElementById('tbPlus').onclick=()=>{ zoom=clamp(zoom-0.1,0.5,3); renderAll(); };
-  document.getElementById('tbMinus').onclick=()=>{ zoom=clamp(zoom+0.1,0.5,3); renderAll(); };
-  document.getElementById('tbReset').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
-  document.getElementById('fit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
+  window.addEventListener('mousemove',e=>{ if(!drag) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; yaw+=dx*0.01; pitch=clamp(pitch+dy*0.01,-1.1,1.1); renderViews(); });
+  document.getElementById('tbFit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderViews(); };
+  document.getElementById('tbPlus').onclick=()=>{ zoom=clamp(zoom-0.1,0.5,3); renderViews(); };
+  document.getElementById('tbMinus').onclick=()=>{ zoom=clamp(zoom+0.1,0.5,3); renderViews(); };
+  document.getElementById('tbReset').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderViews(); };
+  document.getElementById('fit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderViews(); };
 }
 
 /* =====================
@@ -647,15 +658,20 @@ function bindInputs(){
       const map={ '3d':'pane-3d','plan':'pane-plan','front':'pane-front','side':'pane-side' };
       document.getElementById(map[mode]).classList.add('active');
     }
-    renderAll();
+    renderViews();
   }
   document.getElementById('vmQuad').onclick=()=>setView('quad');
   document.getElementById('vm3d').onclick =()=>setView('3d');
   document.getElementById('vmPlan').onclick=()=>setView('plan');
   document.getElementById('vmFront').onclick=()=>setView('front');
   document.getElementById('vmSide').onclick =()=>setView('side');
+  document.getElementById('tbVmQuad').onclick=()=>setView('quad');
+  document.getElementById('tbVm3d').onclick=()=>setView('3d');
+  document.getElementById('tbVmPlan').onclick=()=>setView('plan');
+  document.getElementById('tbVmFront').onclick=()=>setView('front');
+  document.getElementById('tbVmSide').onclick=()=>setView('side');
 
-  document.getElementById('toggleCutlist').onclick=()=>{ S.showCutList=!S.showCutList; renderAll(); };
+  document.getElementById('toggleCutlist').onclick=()=>{ S.showCutList=!S.showCutList; renderCutList(lastModel); };
 
   // initial
   refreshSuggestion();
@@ -675,11 +691,22 @@ function runTests(){
 /* =====================
    Orchestrator
 ===================== */
+function renderViews(){
+  if(!lastModel) lastModel=buildModel();
+  render3D(lastModel);
+  renderPlan(lastModel);
+  renderFront(lastModel);
+  renderSide(lastModel);
+}
+
 function renderAll(){
   // keep runner depth clamped
   S.runnerDepth=Math.min(mm(S.runnerDepth), mm(S.depth));
-  const M=buildModel();
-  render3D(M); renderPlan(M); renderFront(M); renderSide(M); renderSummary(M); renderCutList(M); runTests();
+  lastModel=buildModel();
+  renderViews();
+  renderSummary(lastModel);
+  renderCutList(lastModel);
+  runTests();
   document.getElementById('openingsView').textContent = channels().map(c=>c.w).join(' + ')+' mm';
 }
 function init(){
@@ -746,8 +773,8 @@ window.addEventListener('DOMContentLoaded', init);
     if (e.key === '4') document.getElementById('vmFront').click();
     if (e.key === '5') document.getElementById('vmSide').click();
     if (e.key.toLowerCase() === 'f') document.getElementById('fit').click();
-    if (e.key === '+') { zoom = clamp(zoom - 0.1, 0.5, 3); renderAll(); }
-    if (e.key === '-') { zoom = clamp(zoom + 0.1, 0.5, 3); renderAll(); }
+    if (e.key === '+') { zoom = clamp(zoom - 0.1, 0.5, 3); renderViews(); }
+    if (e.key === '-') { zoom = clamp(zoom + 0.1, 0.5, 3); renderViews(); }
   });
 
   // Hook renderAll so alerts refresh every time
