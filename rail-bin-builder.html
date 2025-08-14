@@ -246,7 +246,8 @@
 ===================== */
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v??0)));
 const mm=v=>Number(v||0);
-const COLORS={ post:'#f5dfe0', lintel:'#e8e8e8', rail:'#c9e1ff', support:'#f6c16c', supportBatten:'#f6c16c', bin:'rgba(255,179,179,.65)', line:'#cfcfcf', dash:'#d8a7ad' };
+const COLORS={ post:'#f5dfe0', lintel:'#e8e8e8', rail:'#c9e1ff', support:'#f6c16c', bin:'rgba(255,179,179,.65)', line:'#cfcfcf', dash:'#d8a7ad' };
+COLORS.supportBatten = COLORS.support;
 function rgba(hex,a){const c=hex.replace('#','');const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);return `rgba(${r},${g},${b},${a})`;}
 
 /* =====================
@@ -406,8 +407,18 @@ function buildModel(){
     });
   });
 
-  // Bounds (frame only; ignore bins so rotation pivots at frame center)
-  M.bounds = {min:[0,0,0], max:[W,H,D]};
+  // Bounds (frame components only; exclude bins so rotation pivots at frame center)
+  const bMin=[Infinity,Infinity,Infinity];
+  const bMax=[-Infinity,-Infinity,-Infinity];
+  M.boxes.filter(b=>b.type!=='bin').forEach(b=>{
+    bMin[0]=Math.min(bMin[0], b.x);
+    bMin[1]=Math.min(bMin[1], b.y);
+    bMin[2]=Math.min(bMin[2], b.z);
+    bMax[0]=Math.max(bMax[0], b.x + b.w);
+    bMax[1]=Math.max(bMax[1], b.y + b.h);
+    bMax[2]=Math.max(bMax[2], b.z + b.d);
+  });
+  M.bounds = {min:bMin, max:bMax};
   // expose model for external consumers (e.g., views, debug panels)
   window.M = M;
   return M;
@@ -445,9 +456,15 @@ function render3D(M){
     makeBoxFaces(b.x,b.y,b.z,b.w,b.h,b.d,color,alpha,'#333').forEach(f=>faces.push(f));
   });
 
-  // fit - center on frame dimensions
-  const cx = M.W / 2, cy = M.H / 2, cz = M.D / 2;
-  const radius = Math.sqrt(M.W**2 + M.H**2 + M.D**2) / 2;
+  // fit - center on model bounds (exclude bins)
+  const cx = (M.bounds.min[0] + M.bounds.max[0]) / 2;
+  const cy = (M.bounds.min[1] + M.bounds.max[1]) / 2;
+  const cz = (M.bounds.min[2] + M.bounds.max[2]) / 2;
+  const radius = Math.sqrt(
+    (M.bounds.max[0] - M.bounds.min[0])**2 +
+    (M.bounds.max[1] - M.bounds.min[1])**2 +
+    (M.bounds.max[2] - M.bounds.min[2])**2
+  ) / 2;
   const f = 700, target = Math.max(1, Math.min(cvs.width, cvs.height) * 0.45);
   const camDist = Math.max(radius + 1, radius * (1 + f / target)) * Math.max(1, zoom);
 
