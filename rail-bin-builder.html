@@ -711,6 +711,21 @@ window.addEventListener('DOMContentLoaded', init);
     // 4) Bottom rails
     if (!S.bottomRowRails) msgs.push('Bottom row rails: OFF (first level has no rails).');
 
+    // 5) Timber overlap
+    const timber = M.boxes.filter(b => ['post','lintel','rail','support'].includes(b.type));
+    outer: for(let i=0;i<timber.length;i++){
+      for(let j=i+1;j<timber.length;j++){
+        const a=timber[i], b=timber[j];
+        if((a.type==='post'&&b.type==='lintel')||(a.type==='lintel'&&b.type==='post')) continue;
+        if(a.x < b.x + b.w && a.x + a.w > b.x &&
+           a.y < b.y + b.h && a.y + a.h > b.y &&
+           a.z < b.z + b.d && a.z + a.d > b.z){
+          msgs.push('Timber overlap detected.');
+          break outer;
+        }
+      }
+    }
+
     document.getElementById('alertMsgs').innerHTML =
       msgs.length ? msgs.map(m => `<div>• ${m}</div>`).join('') : 'No issues.';
   }
