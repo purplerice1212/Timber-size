@@ -279,35 +279,42 @@ const S = {
 /* =====================
    Parsing & geometry
 ===================== */
-// Accepts "283", "283mm", "42.3mm" and rounds UP (ceil).
+// Accept user text like "283" or "283mm," and return an array of millimetres
+// (all values rounded UP). If no valid numbers are found a safe default
+// pattern is returned.
 function parseList(txt){
-  const arr=String(txt).split(/[;,\s]+/).filter(Boolean).map(t=>{
-    const n=parseFloat(String(t).toLowerCase().replace(/mm$/,''));
-    return Math.ceil(n);
-  });
-  return (arr.length && arr.every(n=>Number.isFinite(n)&&n>0)) ? arr : [43,283,43,43,283,43,43];
-}
-// Ensure pattern = [post, open1, post, open2, ..., post] with NO duplicate posts.
-function normalizeSegments(arr, post){
-  const out=[];
-  // Ensure first & last are posts
-  if(arr[0]!==post) arr=[post, ...arr];
-  if(arr[arr.length-1]!==post) arr=[...arr, post];
-  let prevPost=false;
-  for(const v of arr){
-    const isPost=(v===post);
-    if(isPost && prevPost) continue; // collapse doubles
-    out.push(v);
-    prevPost=isPost;
+  const re=/\b(\d+(?:\.\d+)?)\s*(?:mm)?\b/gi;
+  const out=[]; let m;
+  const str=String(txt);
+  while((m=re.exec(str))){
+    const n=Math.ceil(parseFloat(m[1]));
+    if(Number.isFinite(n) && n>0) out.push(n);
   }
-  // Guard against silly patterns like [post,post] -> ensure at least one opening
-  if(out.length<3) out.splice(1,0,283);
+  return out.length? out : [43,283,43,43,283,43,43];
+}
+// Normalize an array of segments so the pattern is always
+// [post, open1, post, open2, …, post]. Duplicate posts are collapsed.
+function normalizeSegments(arr, post){
+  const seg = Array.isArray(arr)? arr.slice() : [];
+  if(seg[0] !== post) seg.unshift(post);
+  if(seg[seg.length-1] !== post) seg.push(post);
+  const out=[]; let lastWasPost=false;
+  for(const n of seg){
+    const isPost = n===post;
+    if(isPost && lastWasPost) continue; // collapse duplicates
+    out.push(n); lastWasPost=isPost;
+  }
+  if(out.length<3) out.splice(1,0,283); // ensure at least one opening
   return out;
 }
 function segments(){ return normalizeSegments(parseList(S.patternText), S.post); }
+// Convert a normalized segment list into channel definitions {x,w}
 function channels(){
-  const seg=segments(), P=S.post; let x=0, out=[];
-  for(const s of seg){ if(s>P) out.push({x, w:s}); x+=s; }
+  const seg = segments(); const P=S.post; let x=0; const out=[];
+  for(const s of seg){
+    if(s!==P) out.push({x, w:s});
+    x += s;
+  }
   return out;
 }
 function railXPositions(ch){
