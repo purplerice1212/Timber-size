@@ -16,7 +16,21 @@
   small, .muted{color:#b7b7b7}
   button,input,select{font:inherit}
   .app{display:grid;grid-template-columns:1fr 360px;gap:8px;height:100%;padding:8px}
-  .views{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:6px;min-width:0;min-height:0}
+  .views{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:1fr 1fr;
+    grid-template-areas:
+      "front 3d"
+      "side plan";
+    gap:6px;
+    min-width:0;
+    min-height:0
+  }
+  #pane-front{grid-area:front}
+  #pane-3d{grid-area:3d}
+  #pane-side{grid-area:side}
+  #pane-plan{grid-area:plan}
   .pane{position:relative;background:var(--panel);border:1px solid #222;border-radius:6px;min-width:0;min-height:0;overflow:hidden}
   .pane canvas{width:100%;height:100%;display:block}
   .hud{position:absolute;left:8px;top:8px;background:#0008;border-radius:4px;padding:4px 8px;font-size:12px}
@@ -37,7 +51,15 @@
   .cutlist{border-top:1px dashed #333;margin-top:8px;padding-top:8px}
   .hidden{display:none}
   /* single-view mode */
-  .single .views{grid-template-columns:1fr;grid-template-rows:1fr}
+  .single .views{
+    grid-template-columns:1fr;
+    grid-template-rows:1fr;
+    grid-template-areas:'main'
+  }
+  .single .views #pane-3d,
+  .single .views #pane-front,
+  .single .views #pane-side,
+  .single .views #pane-plan{grid-area:main}
   .single .views .pane:not(.active){display:none}
 </style>
 </head>
