@@ -559,14 +559,35 @@ function renderSummary(M){
     <div><b>Supports</b> ${supportCount}</div>`;
 }
 function renderCutList(M){
-  const railLen=Math.min(S.runnerDepth,S.depth);
-  const railsActual=M.boxes.filter(b=>b.type==='rail').length;
+  const parts={post:new Map(), lintel:new Map(), rail:new Map(), support:new Map()};
+  M.boxes.forEach(b=>{
+    if(!parts[b.type]) return;
+    let len=0;
+    if(b.type==='post') len=b.h;
+    else if(b.type==='lintel') len=b.w;
+    else if(b.type==='rail') len=Math.min(b.d, Math.min(S.runnerDepth,S.depth));
+    else if(b.type==='support') len=Math.max(b.w,b.d);
+    parts[b.type].set(len,(parts[b.type].get(len)||0)+1);
+  });
+
+  let html='<div><b>Cut List</b></div>';
+  const labels={post:'Posts', lintel:'Lintels', rail:'Rails', support:'Supports'};
+  for(const type of Object.keys(parts)){
+    for(const [len,count] of [...parts[type]].sort((a,b)=>a[0]-b[0])){
+      const note= type==='rail' ? ' (usable depth)' : '';
+      html+=`<div>${labels[type]}: ${count} pcs — length <b>${len}</b> mm${note}</div>`;
+    }
+  }
   const el=document.getElementById('cutlist');
-  el.innerHTML=`<div><b>Cut List</b></div>
-    <div>Posts: ${M.channels.length+1} front${S.rearFrame?`, ${M.channels.length+1} back`:''} — length <b>${M.H}</b> mm</div>
-    <div>Lintels: ${S.rearFrame?4:2} pcs — length <b>${M.W}</b> mm</div>
-    <div>Rails: ${railsActual} pcs — length <b>${railLen}</b> mm (usable depth)</div>`;
+  el.innerHTML=html;
   el.classList.toggle('hidden', !S.showCutList);
+  const btn=document.getElementById('toggleCutlist');
+  if(btn) btn.textContent=`Cut List ${S.showCutList?'▣':'▢'}`;
+}
+
+function toggleCutlist(){
+  S.showCutList=!S.showCutList;
+  renderCutList(buildModel());
 }
 
 /* =====================
@@ -655,7 +676,7 @@ function bindInputs(){
   document.getElementById('vmFront').onclick=()=>setView('front');
   document.getElementById('vmSide').onclick =()=>setView('side');
 
-  document.getElementById('toggleCutlist').onclick=()=>{ S.showCutList=!S.showCutList; renderAll(); };
+  document.getElementById('toggleCutlist').onclick=toggleCutlist;
 
   // initial
   refreshSuggestion();
