@@ -246,7 +246,7 @@
 ===================== */
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v??0)));
 const mm=v=>Number(v||0);
-const COLORS={ post:'#f5dfe0', lintel:'#e8e8e8', rail:'#c9e1ff', support:'#f6c16c', bin:'rgba(255,179,179,.65)', line:'#cfcfcf', dash:'#d8a7ad' };
+const COLORS={ post:'#f5dfe0', lintel:'#e8e8e8', rail:'#c9e1ff', support:'#f6c16c', supportBatten:'#f6c16c', bin:'rgba(255,179,179,.65)', line:'#cfcfcf', dash:'#d8a7ad' };
 function rgba(hex,a){const c=hex.replace('#','');const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);return `rgba(${r},${g},${b},${a})`;}
 
 /* =====================
@@ -440,7 +440,7 @@ function render3D(M){
   // faces from model
   const faces=[];
   M.boxes.forEach(b=>{
-    const color = b.type==='post'?COLORS.post: b.type==='lintel'?COLORS.lintel: b.type==='rail'?COLORS.rail: b.type==='bin'?COLORS.bin: b.type==='support'?COLORS.support:'#ddd';
+    const color = b.type==='post'?COLORS.post: b.type==='lintel'?COLORS.lintel: b.type==='rail'?COLORS.rail: b.type==='bin'?COLORS.bin: b.type==='support'?COLORS.support: b.type==='supportBatten'?COLORS.supportBatten:'#ddd';
     const alpha = b.type==='bin'?0.65:1;
     makeBoxFaces(b.x,b.y,b.z,b.w,b.h,b.d,color,alpha,'#333').forEach(f=>faces.push(f));
   });
@@ -536,6 +536,10 @@ function renderPlan(M){
   M.boxes.filter(b=>b.type==='post' && b.z===0).forEach(b=>{
     ctx.fillStyle=COLORS.post; ctx.fillRect(ox+b.x*s, oy, b.w*s, M.D*s);
   });
+  // support battens
+  M.boxes.filter(b=>b.type==='supportBatten').forEach(b=>{
+    ctx.fillStyle=COLORS.supportBatten; ctx.fillRect(ox+b.x*s, oy+b.z*s, b.w*s, b.d*s);
+  });
   // Rear posts (hint)
   if(S.rearFrame){
     M.boxes.filter(b=>b.type==='post' && Math.abs(b.z-(M.D-M.P))<1e-3).forEach(b=>{
@@ -574,6 +578,8 @@ function renderFront(M){
   M.boxes.filter(b=>b.type==='lintel'&&b.z===0).forEach(b=>{ ctx.fillStyle=COLORS.lintel; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
   // supports
   M.boxes.filter(b=>b.type==='support').forEach(b=>{ ctx.fillStyle=COLORS.support; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
+  // support battens
+  M.boxes.filter(b=>b.type==='supportBatten').forEach(b=>{ ctx.fillStyle=COLORS.supportBatten; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
   // rails
   M.boxes.filter(b=>b.type==='rail').forEach(b=>{ ctx.fillStyle=COLORS.rail; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
   // posts front
@@ -591,6 +597,16 @@ function renderSide(M){
   drawDim(ctx,ox,oy-12,ox+M.D*s,oy-12,`D ${M.D} mm`);
   drawDim(ctx,ox-12,oy,ox-12,oy+M.H*s,`H ${M.H} mm`,'right');
 
+  // supports
+  ctx.fillStyle=COLORS.support;
+  M.boxes.filter(b=>b.type==='support').forEach(b=>{
+    ctx.fillRect(ox + b.z*s, oy + b.y*s, b.d*s, b.h*s);
+  });
+  // support battens
+  ctx.fillStyle=COLORS.supportBatten;
+  M.boxes.filter(b=>b.type==='supportBatten').forEach(b=>{
+    ctx.fillRect(ox + b.z*s, oy + b.y*s, b.d*s, b.h*s);
+  });
   // rails (depth × post)
   ctx.fillStyle=COLORS.rail;
   M.boxes.filter(b=>b.type==='rail').forEach(b=>{
