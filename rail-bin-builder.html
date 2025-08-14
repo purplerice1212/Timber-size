@@ -649,6 +649,7 @@ function bindInputs(){
     }
     renderAll();
   }
+  window.setView = setView;
   document.getElementById('vmQuad').onclick=()=>setView('quad');
   document.getElementById('vm3d').onclick =()=>setView('3d');
   document.getElementById('vmPlan').onclick=()=>setView('plan');
@@ -685,7 +686,9 @@ function renderAll(){
 function init(){
   bind3DInteractions();
   bindInputs();
-  renderAll();
+  const isNarrow = window.matchMedia('(max-width: 600px)').matches;
+  if(isNarrow) setView('3d');
+  else renderAll();
 }
 window.addEventListener('DOMContentLoaded', init);
 </script>
