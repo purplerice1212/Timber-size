@@ -461,7 +461,13 @@ function bind3DInteractions(){
    2D renderers (read model only)
 ===================== */
 function size2D(cvs){ sizeCanvas(cvs); }
-function drawDim(ctx,x1,y1,x2,y2,label,align='center'){ ctx.strokeStyle='#bbb'; ctx.fillStyle='#ddd'; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); const mx=(x1+x2)/2,my=(y1+y2)/2; ctx.font='11px sans-serif'; ctx.textAlign=align; ctx.textBaseline='middle'; ctx.fillText(label,mx,my); }
+function drawDim(ctx,x1,y1,x2,y2,label,align='center',color='#ddd'){
+  ctx.strokeStyle=color; ctx.fillStyle=color;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const mx=(x1+x2)/2,my=(y1+y2)/2;
+  ctx.font='11px sans-serif'; ctx.textAlign=align; ctx.textBaseline='middle';
+  ctx.fillText(label,mx,my);
+}
 
 function renderPlan(M){
   const cvs=document.getElementById('cplan'), ctx=cvs.getContext('2d'); size2D(cvs);
@@ -485,12 +491,15 @@ function renderPlan(M){
   }
 
   // Channel labels vs target
-  ctx.font='11px sans-serif'; ctx.textBaseline='top';
   M.channels.forEach(c=>{
-    const cx=ox+c.x*s, cw=c.w*s; const good=Math.abs(c.w - S.openingTarget) < 0.5;
-    ctx.strokeStyle=good?'#44aa44':'#ff5555';
-    drawDim(ctx,cx,oy+M.D*s+12,cx+cw,oy+M.D*s+12,`${c.w} mm`);
-    if(!good){ ctx.fillStyle='#ff5555'; ctx.fillText(`target ${S.openingTarget} → Δ${(c.w-S.openingTarget).toFixed(1)} mm`, cx, oy+M.D*s+24); }
+    const cx=ox+c.x*s, cw=c.w*s;
+    const dev=Math.abs(c.w - S.openingTarget);
+    const color=dev>=0.5?'#ff5555':'#ddd';
+    drawDim(ctx,cx,oy+M.D*s+12,cx+cw,oy+M.D*s+12,`${c.w} mm`,'center',color);
+    if(dev>=0.5){
+      ctx.textBaseline='top'; ctx.fillStyle='#ff5555';
+      ctx.fillText(`target ${S.openingTarget} → Δ${(c.w-S.openingTarget).toFixed(1)} mm`, cx, oy+M.D*s+24);
+    }
   });
 
   // Rail footprints
