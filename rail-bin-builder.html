@@ -74,6 +74,7 @@
         <div class="dim" id="dim3d"></div>
         <div class="gridNote">Drag to orbit • Scroll to zoom • Double-click to reset</div>
         <div class="toolbar">
+          <button class="btn tbView" data-view="3d">⤢</button>
           <button class="btn" id="tbFit">Fit</button>
           <button class="btn" id="tbPlus">+</button>
           <button class="btn" id="tbMinus">−</button>
@@ -86,6 +87,7 @@
         <canvas id="cfront"></canvas>
         <div class="hud">FRONT / Elevation (X×Y)</div>
         <div class="dim" id="dimFront"></div>
+        <div class="toolbar"><button class="btn tbView" data-view="front">⤢</button></div>
       </div>
 
       <!-- SIDE -->
@@ -93,6 +95,7 @@
         <canvas id="cside"></canvas>
         <div class="hud">SIDE / Elevation (Z×Y)</div>
         <div class="dim" id="dimSide"></div>
+        <div class="toolbar"><button class="btn tbView" data-view="side">⤢</button></div>
       </div>
 
       <!-- PLAN -->
@@ -100,6 +103,7 @@
         <canvas id="cplan"></canvas>
         <div class="hud">TOP / Plan (X×Z)</div>
         <div class="dim" id="dimPlan"></div>
+        <div class="toolbar"><button class="btn tbView" data-view="plan">⤢</button></div>
       </div>
     </div>
 
@@ -275,6 +279,8 @@ const S = {
   viewMode:'quad', // quad | 3d | plan | front | side
   showCutList:false
 };
+
+let M;
 
 /* =====================
    Parsing & geometry
@@ -459,17 +465,17 @@ function render3D(M){
 }
 function bind3DInteractions(){
   const cvs=c3d(); if(!cvs) return;
-  cvs.addEventListener('dblclick', ()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); });
-  cvs.addEventListener('wheel', e=>{ zoom=clamp(zoom+(e.deltaY>0?0.1:-0.1),0.5,3); renderAll(); }, {passive:true});
+  cvs.addEventListener('dblclick', ()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(false); });
+  cvs.addEventListener('wheel', e=>{ zoom=clamp(zoom+(e.deltaY>0?0.1:-0.1),0.5,3); renderAll(false); }, {passive:true});
   let drag=false,lx=0,ly=0;
   cvs.addEventListener('mousedown',e=>{ drag=true; lx=e.clientX; ly=e.clientY; });
   window.addEventListener('mouseup',()=>drag=false);
-  window.addEventListener('mousemove',e=>{ if(!drag) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; yaw+=dx*0.01; pitch=clamp(pitch+dy*0.01,-1.1,1.1); renderAll(); });
-  document.getElementById('tbFit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
-  document.getElementById('tbPlus').onclick=()=>{ zoom=clamp(zoom-0.1,0.5,3); renderAll(); };
-  document.getElementById('tbMinus').onclick=()=>{ zoom=clamp(zoom+0.1,0.5,3); renderAll(); };
-  document.getElementById('tbReset').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
-  document.getElementById('fit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
+  window.addEventListener('mousemove',e=>{ if(!drag) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; yaw+=dx*0.01; pitch=clamp(pitch+dy*0.01,-1.1,1.1); renderAll(false); });
+  document.getElementById('tbFit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(false); };
+  document.getElementById('tbPlus').onclick=()=>{ zoom=clamp(zoom-0.1,0.5,3); renderAll(false); };
+  document.getElementById('tbMinus').onclick=()=>{ zoom=clamp(zoom+0.1,0.5,3); renderAll(false); };
+  document.getElementById('tbReset').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(false); };
+  document.getElementById('fit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(false); };
 }
 
 /* =====================
@@ -611,7 +617,7 @@ function renderCutList(M){
 
 function toggleCutlist(){
   S.showCutList=!S.showCutList;
-  renderCutList(buildModel());
+  renderAll(false);
 }
 
 /* =====================
@@ -692,13 +698,17 @@ function bindInputs(){
       const map={ '3d':'pane-3d','plan':'pane-plan','front':'pane-front','side':'pane-side' };
       document.getElementById(map[mode]).classList.add('active');
     }
-    renderAll();
+    renderAll(false);
   }
   document.getElementById('vmQuad').onclick=()=>setView('quad');
   document.getElementById('vm3d').onclick =()=>setView('3d');
   document.getElementById('vmPlan').onclick=()=>setView('plan');
   document.getElementById('vmFront').onclick=()=>setView('front');
   document.getElementById('vmSide').onclick =()=>setView('side');
+
+  document.querySelectorAll('.tbView').forEach(btn=>{
+    btn.onclick=()=>setView(S.viewMode==='quad'?btn.dataset.view:'quad');
+  });
 
   document.getElementById('toggleCutlist').onclick=toggleCutlist;
 
@@ -709,7 +719,7 @@ function bindInputs(){
 /* =====================
    Tests (minimal, non-blocking)
 ===================== */
-function runTests(M=buildModel()){
+function runTests(M){
   const T=[], eq=(a,b,e=1e-6)=>Math.abs(a-b)<=e;
   const fallback='43,283,43,43,283,43,43';
 
@@ -734,10 +744,11 @@ function runTests(M=buildModel()){
 /* =====================
    Orchestrator
 ===================== */
-function renderAll(){
-  // keep runner depth clamped
-  S.runnerDepth=Math.min(mm(S.runnerDepth), mm(S.depth));
-  const M=buildModel();
+function renderAll(rebuild=true){
+  if(rebuild){
+    S.runnerDepth=Math.min(mm(S.runnerDepth), mm(S.depth));
+    M=buildModel();
+  }
   render3D(M); renderPlan(M); renderFront(M); renderSide(M); renderSummary(M); renderCutList(M); runTests(M);
   document.getElementById('openingsView').textContent = channels().map(c=>c.w).join(' + ')+' mm';
 }
@@ -761,8 +772,8 @@ window.addEventListener('DOMContentLoaded', init);
   sidebar.insertBefore(banner, h1 ? h1.nextSibling : sidebar.firstChild);
 
   function updateAlerts(){
-    const M = buildModel();
     const msgs = [];
+    const M = window.M;
     // 1) Pattern normalization (collapses accidental double posts)
     const arr = parseList(S.patternText);
     const norm = normalizeSegments(arr, S.post);
@@ -805,19 +816,17 @@ window.addEventListener('DOMContentLoaded', init);
     if (e.key === '4') document.getElementById('vmFront').click();
     if (e.key === '5') document.getElementById('vmSide').click();
     if (e.key.toLowerCase() === 'f') document.getElementById('fit').click();
-    if (e.key === '+') { zoom = clamp(zoom - 0.1, 0.5, 3); renderAll(); }
-    if (e.key === '-') { zoom = clamp(zoom + 0.1, 0.5, 3); renderAll(); }
+    if (e.key === '+') { zoom = clamp(zoom - 0.1, 0.5, 3); renderAll(false); }
+    if (e.key === '-') { zoom = clamp(zoom + 0.1, 0.5, 3); renderAll(false); }
   });
 
   // Hook renderAll so alerts refresh every time
   const _renderAll = window.renderAll;
-  window.renderAll = function(){
-    _renderAll();
+  window.renderAll = function(rebuild){
+    _renderAll(rebuild);
     updateAlerts();
   };
 
-  // First run
-  updateAlerts();
 })();
 </script>
 </body>
