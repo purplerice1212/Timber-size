@@ -660,16 +660,19 @@ function bindInputs(){
     }
     renderViews();
   }
-  document.getElementById('vmQuad').onclick=()=>setView('quad');
-  document.getElementById('vm3d').onclick =()=>setView('3d');
-  document.getElementById('vmPlan').onclick=()=>setView('plan');
-  document.getElementById('vmFront').onclick=()=>setView('front');
-  document.getElementById('vmSide').onclick =()=>setView('side');
-  document.getElementById('tbVmQuad').onclick=()=>setView('quad');
-  document.getElementById('tbVm3d').onclick=()=>setView('3d');
-  document.getElementById('tbVmPlan').onclick=()=>setView('plan');
-  document.getElementById('tbVmFront').onclick=()=>setView('front');
-  document.getElementById('tbVmSide').onclick=()=>setView('side');
+  const viewButtons={
+    quad:['vmQuad','tbVmQuad'],
+    '3d':['vm3d','tbVm3d'],
+    plan:['vmPlan','tbVmPlan'],
+    front:['vmFront','tbVmFront'],
+    side:['vmSide','tbVmSide']
+  };
+  Object.entries(viewButtons).forEach(([mode,ids])=>{
+    ids.forEach(id=>{
+      const btn=document.getElementById(id);
+      if(btn) btn.onclick=()=>setView(mode);
+    });
+  });
 
   document.getElementById('toggleCutlist').onclick=()=>{ S.showCutList=!S.showCutList; renderCutList(lastModel); };
 
@@ -693,10 +696,11 @@ function runTests(){
 ===================== */
 function renderViews(){
   if(!lastModel) lastModel=buildModel();
-  render3D(lastModel);
-  renderPlan(lastModel);
-  renderFront(lastModel);
-  renderSide(lastModel);
+  const mode=S.viewMode;
+  if(mode==='quad' || mode==='3d')   render3D(lastModel);
+  if(mode==='quad' || mode==='plan') renderPlan(lastModel);
+  if(mode==='quad' || mode==='front')renderFront(lastModel);
+  if(mode==='quad' || mode==='side') renderSide(lastModel);
 }
 
 function renderAll(){
