@@ -709,12 +709,26 @@ function bindInputs(){
 /* =====================
    Tests (minimal, non-blocking)
 ===================== */
-function runTests(){
+function runTests(M=buildModel()){
   const T=[], eq=(a,b,e=1e-6)=>Math.abs(a-b)<=e;
+  const fallback='43,283,43,43,283,43,43';
+
+  // parser
+  T.push({name:'parser: mm suffix', pass:(()=>parseList('40mm,283,40').join(',')==='40,283,40')()});
+  T.push({name:'parser: fallback', pass:(()=>parseList('x,y').join(',')===fallback)()});
   T.push({name:'normalize collapses double posts', pass:(()=>{const P=43; const n=normalizeSegments([P,283,P,P,283,P,P],P); return n.join(',')==='43,283,43,283,43';})()});
-  T.push({name:'two rails per opening (edges)', pass:(()=>{const ch={x:43,w:283}; return railXPositions(ch).length===2;})()});
-  T.push({name:'lip placement', pass:(()=>{const P=43, lip=9, y=200; return (y+P-lip)===234;})()});
-  const el=document.getElementById('tests'); if(el) el.innerHTML=T.map(t=>`<div class="${t.pass?'ok':'ng'}">${t.pass?'✓':'✗'} ${t.name}</div>`).join('');
+
+  // clamped dimensions
+  T.push({name:'runner depth clamped', pass:S.runnerDepth<=S.depth});
+  T.push({name:'rail depth clamped', pass:M.boxes.filter(b=>b.type==='rail').every(r=>r.d<=S.depth)});
+
+  // component counts
+  T.push({name:'post count', pass:(()=>{const expected=segments().filter(s=>s===S.post).length*(S.rearFrame?2:1); return M.boxes.filter(b=>b.type==='post').length===expected;})()});
+  T.push({name:'lintel count', pass:(()=>{const expected=S.rearFrame?4:2; return M.boxes.filter(b=>b.type==='lintel').length===expected;})()});
+  T.push({name:'rail count', pass:(()=>{const perOpening=(S.railMode==='centered'?1:2); const levelCount=S.rows.length-(S.bottomRowRails?0:1); const expected=channels().length*levelCount*perOpening; return M.boxes.filter(b=>b.type==='rail').length===expected;})()});
+
+  const el=document.getElementById('tests');
+  if(el) el.innerHTML=T.map(t=>`<div class="${t.pass?'ok':'ng'}">${t.pass?'✓':'✗'} ${t.name}</div>`).join('');
 }
 
 /* =====================
@@ -724,7 +738,7 @@ function renderAll(){
   // keep runner depth clamped
   S.runnerDepth=Math.min(mm(S.runnerDepth), mm(S.depth));
   const M=buildModel();
-  render3D(M); renderPlan(M); renderFront(M); renderSide(M); renderSummary(M); renderCutList(M); runTests();
+  render3D(M); renderPlan(M); renderFront(M); renderSide(M); renderSummary(M); renderCutList(M); runTests(M);
   document.getElementById('openingsView').textContent = channels().map(c=>c.w).join(' + ')+' mm';
 }
 function init(){
