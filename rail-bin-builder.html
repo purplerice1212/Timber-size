@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rail + Bin Builder (mm) — single geometry</title>
+<style>
+  :root{
+    --bg:#0b0b0b; --panel:#111; --grid:#1e1e1e; --ink:#e7e7e7;
+    --ok:#3ac36a; --ng:#ff5c5c;
+    --post:#f5dfe0; --lintel:#e8e8e8; --rail:#c9e1ff; --support:#f6c16c; --bin:rgba(255,179,179,.65);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:#0b0b0b;color:#e7e7e7;font:14px/1.25 system-ui,Segoe UI,Arial}
+  h1,h2{margin:0 0 .5rem}
+  small, .muted{color:#b7b7b7}
+  button,input,select{font:inherit}
+  .app{display:grid;grid-template-columns:1fr 360px;gap:8px;height:100%;padding:8px}
+  .views{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:6px;min-width:0;min-height:0}
+  .pane{position:relative;background:var(--panel);border:1px solid #222;border-radius:6px;min-width:0;min-height:0;overflow:hidden}
+  .pane canvas{width:100%;height:100%;display:block}
+  .hud{position:absolute;left:8px;top:8px;background:#0008;border-radius:4px;padding:4px 8px;font-size:12px}
+  .toolbar{position:absolute;right:8px;top:8px;display:flex;gap:6px}
+  .toolbar button{background:#0009;color:#fff;border:1px solid #333;border-radius:4px;padding:3px 6px;cursor:pointer}
+  .sidebar{overflow:auto;background:#111;border:1px solid #222;border-radius:6px;padding:10px}
+  .grp{border:1px solid #222;border-radius:8px;background:#141414;margin:10px 0;padding:10px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .ctl{display:flex;flex-direction:column;gap:4px;min-width:120px;flex:1}
+  .ctl input[type="text"], .ctl input[type="number"], .ctl select{
+    background:#0f0f0f;border:1px solid #2a2a2a;color:#e7e7e7;border-radius:6px;padding:6px 8px;min-width:100px
+  }
+  .badge{display:inline-block;background:#0009;border:1px solid #333;border-radius:4px;padding:2px 6px;margin-right:6px}
+  .dim{position:absolute;right:8px;bottom:8px;font-size:11px;background:#0008;border-radius:4px;padding:2px 6px}
+  .gridNote{position:absolute;left:8px;bottom:8px;font-size:11px;color:#c9c9c9}
+  .ok{color:var(--ok)} .ng{color:var(--ng)}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .cutlist{border-top:1px dashed #333;margin-top:8px;padding-top:8px}
+  .hidden{display:none}
+  /* single-view mode */
+  .single .views{grid-template-columns:1fr;grid-template-rows:1fr}
+  .single .views .pane:not(.active){display:none}
+</style>
+</head>
+<body>
+  <div class="app" id="appRoot">
+    <!-- ===== Views area ===== -->
+    <div class="views" id="viewsWrap">
+      <!-- 3D -->
+      <div class="pane active" id="pane-3d">
+        <canvas id="c3d"></canvas>
+        <div class="hud">3D</div>
+        <div class="dim" id="dim3d"></div>
+        <div class="gridNote">Drag to orbit • Scroll to zoom • Double-click to reset</div>
+        <div class="toolbar">
+          <button class="btn" id="tbFit">Fit</button>
+          <button class="btn" id="tbPlus">+</button>
+          <button class="btn" id="tbMinus">−</button>
+          <button class="btn" id="tbReset">Reset</button>
+        </div>
+      </div>
+
+      <!-- FRONT -->
+      <div class="pane" id="pane-front">
+        <canvas id="cfront"></canvas>
+        <div class="hud">FRONT / Elevation (X×Y)</div>
+        <div class="dim" id="dimFront"></div>
+      </div>
+
+      <!-- SIDE -->
+      <div class="pane" id="pane-side">
+        <canvas id="cside"></canvas>
+        <div class="hud">SIDE / Elevation (Z×Y)</div>
+        <div class="dim" id="dimSide"></div>
+      </div>
+
+      <!-- PLAN -->
+      <div class="pane" id="pane-plan">
+        <canvas id="cplan"></canvas>
+        <div class="hud">TOP / Plan (X×Z)</div>
+        <div class="dim" id="dimPlan"></div>
+      </div>
+    </div>
+
+    <!-- ===== Sidebar / Controls ===== -->
+    <div class="sidebar" id="controls">
+      <h1>Rail + Drawer / Bin Builder (mm)</h1>
+
+      <div class="grp">
+        <div class="row">
+          <div class="ctl">
+            <label>View mode</label>
+            <div class="row">
+              <button class="btn" id="vmQuad">Quad</button>
+              <button class="btn" id="vm3d">3D</button>
+              <button class="btn" id="vmPlan">Plan</button>
+              <button class="btn" id="vmFront">Front</button>
+              <button class="btn" id="vmSide">Side</button>
+            </div>
+          </div>
+          <div class="ctl">
+            <label>Panels</label>
+            <div class="row">
+              <button class="btn" id="toggleCutlist">Cut List ▢</button>
+              <button class="btn" id="fit">Fit view</button>
+            </div>
+          </div>
+        </div>
+        <small class="muted">Single geometry drives all views — no duplication.</small>
+      </div>
+
+      <div class="grp">
+        <h2>Frame</h2>
+        <div class="row">
+          <div class="ctl"><label>Height (manual)</label><input id="height" value="926" /></div>
+          <div class="ctl"><label><input id="autoHeight" type="checkbox" checked /> Auto height</label></div>
+          <div class="ctl"><label>Depth (overall)</label><input id="depth" value="420" /></div>
+          <div class="ctl"><label>Runner depth (usable)</label><input id="runnerDepth" value="420" /></div>
+          <div class="ctl"><label>Post size (square)</label><input id="post" value="43" /></div>
+          <div class="ctl"><label><input id="rearFrame" type="checkbox" checked /> Rear frame (back posts + lintels)</label></div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h2>Columns &amp; Openings</h2>
+        <div class="ctl">
+          <label>Pattern (accepts “283mm”; rounds up)</label>
+          <input id="patternText" value="43,283,43,43,283,43,43" />
+          <div class="muted">Segments = [post, open1, post, open2, …, post]</div>
+        </div>
+        <div class="row">
+          <button class="btn" id="addCol">+ Add column</button>
+          <button class="btn" id="remCol">− Remove last</button>
+        </div>
+        <div class="muted">Openings: <span id="openingsView" class="badge"></span></div>
+      </div>
+
+      <div class="grp">
+        <h2>Rows (per-row)</h2>
+        <div id="rows"></div>
+        <div class="row">
+          <button class="btn" id="addRow">+ Add row</button>
+          <button class="btn" id="remRow">− Remove last</button>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h2>Global Clearances</h2>
+        <div class="row">
+          <div class="ctl"><label>Top clearance</label><input id="topClear" value="10" /></div>
+          <div class="ctl"><label>Bottom clearance</label><input id="bottomClear" value="10" /></div>
+          <div class="ctl"><label><input id="bottomRowRails" type="checkbox" /> Bottom row has rails</label></div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h2>Rails</h2>
+        <div class="ctl">
+          <label>Placement</label>
+          <select id="railMode">
+            <option value="edges" selected>Edges (left & right)</option>
+            <option value="centered">Centered (single)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h2>Supports</h2>
+        <div class="row">
+          <div class="ctl"><label><input id="topSupport" type="checkbox" checked /> Top support</label></div>
+          <div class="ctl">
+            <label>Top orientation</label>
+            <select id="topOrient"><option value="X" selected>Across width</option><option value="Z">Front-to-back</option></select>
+          </div>
+          <div class="ctl"><label>Top drop (mm)</label><input id="topDrop" value="0" /></div>
+          <div class="ctl"><label>Top size (mm)</label><input id="topSize" value="43" /></div>
+        </div>
+        <div class="row">
+          <div class="ctl"><label><input id="bottomSupport" type="checkbox" checked /> Bottom support</label></div>
+          <div class="ctl">
+            <label>Bottom orientation</label>
+            <select id="bottomOrient"><option value="X" selected>Across width</option><option value="Z">Front-to-back</option></select>
+          </div>
+          <div class="ctl"><label>Bottom lift (mm)</label><input id="bottomLift" value="8" /></div>
+          <div class="ctl"><label>Bottom size (mm)</label><input id="bottomSize" value="43" /></div>
+        </div>
+        <div class="ctl"><label><input id="extraBottomBeam" type="checkbox" /> Extra bottom beam</label></div>
+      </div>
+
+      <div class="grp">
+        <h2>Bin / Opening helper</h2>
+        <div class="row">
+          <div class="ctl"><label>Bin body width (outer)</label><input id="binBody" value="283" /></div>
+          <div class="ctl"><label>Lip overhang per side</label><input id="binFlange" value="9.5" /></div>
+          <div class="ctl"><label>Lip thickness</label><input id="binLip" value="9" /></div>
+          <div class="ctl"><label>Total slack (both sides)</label><input id="binSlack" value="6" /></div>
+          <div class="ctl"><label>Default bin height (visual)</label><input id="binHeightDefault" value="95" /></div>
+          <div class="ctl"><label><input id="showBins" type="checkbox" checked /> Show bins</label></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="applyOpening">Apply suggested opening to all columns</button>
+          <span id="suggest" class="badge">Suggested opening: …</span>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h2>Summary</h2>
+        <div id="summary"></div>
+        <div class="cutlist hidden" id="cutlist"></div>
+      </div>
+
+      <div class="grp">
+        <h2>Tests</h2>
+        <div id="tests"></div>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+/* =====================
+   Utilities & palette
+===================== */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v??0)));
+const mm=v=>Number(v||0);
+const COLORS={ post:'#f5dfe0', lintel:'#e8e8e8', rail:'#c9e1ff', support:'#f6c16c', bin:'rgba(255,179,179,.65)', line:'#cfcfcf', dash:'#d8a7ad' };
+function rgba(hex,a){const c=hex.replace('#','');const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);return `rgba(${r},${g},${b},${a})`;}
+
+/* =====================
+   State (S)
+===================== */
+const S = {
+  // Frame
+  height: 926, autoHeight:true,
+  depth: 420, runnerDepth: 420, post: 43, rearFrame: true,
+
+  // Pattern text (user enters posts + openings). We normalize (no double posts).
+  patternText: '43,283,43,43,283,43,43',
+
+  // Rows (per-row)
+  rows: [ {height:120,gap:10,overhang:0}, {height:120,gap:10,overhang:0}, {height:120,gap:10,overhang:0}, {height:120,gap:10,overhang:0} ],
+  topClear:10, bottomClear:10, bottomRowRails:false,
+
+  // Rails & supports
+  railMode:'edges', // 'edges' | 'centered'
+  topSupport:true, topOrient:'X', topDrop:0, topSize:43,
+  bottomSupport:true, bottomOrient:'X', bottomLift:8, bottomSize:43,
+  extraBottomBeam:false,
+
+  // Bin / opening helper (bins sit on rails by lip)
+  binBody:283, binFlange:9.5, binLip:9, binSlack:6,
+  binHeightDefault:95, showBins:true,
+
+  // UI state
+  openingTarget:283,
+  viewMode:'quad', // quad | 3d | plan | front | side
+  showCutList:false
+};
+
+/* =====================
+   Parsing & geometry
+===================== */
+// Accepts "283", "283mm", "42.3mm" and rounds UP (ceil).
+function parseList(txt){
+  const arr=String(txt).split(/[;,\s]+/).filter(Boolean).map(t=>{
+    const n=parseFloat(String(t).toLowerCase().replace(/mm$/,''));
+    return Math.ceil(n);
+  });
+  return (arr.length && arr.every(n=>Number.isFinite(n)&&n>0)) ? arr : [43,283,43,43,283,43,43];
+}
+// Ensure pattern = [post, open1, post, open2, ..., post] with NO duplicate posts.
+function normalizeSegments(arr, post){
+  const out=[];
+  // Ensure first & last are posts
+  if(arr[0]!==post) arr=[post, ...arr];
+  if(arr[arr.length-1]!==post) arr=[...arr, post];
+  let prevPost=false;
+  for(const v of arr){
+    const isPost=(v===post);
+    if(isPost && prevPost) continue; // collapse doubles
+    out.push(v);
+    prevPost=isPost;
+  }
+  // Guard against silly patterns like [post,post] -> ensure at least one opening
+  if(out.length<3) out.splice(1,0,283);
+  return out;
+}
+function segments(){ return normalizeSegments(parseList(S.patternText), S.post); }
+function channels(){
+  const seg=segments(), P=S.post; let x=0, out=[];
+  for(const s of seg){ if(s>P) out.push({x, w:s}); x+=s; }
+  return out;
+}
+function railXPositions(ch){
+  if(S.railMode==='centered') return [ch.x + (ch.w - S.post)/2];
+  return [ch.x, ch.x + ch.w - S.post];
+}
+function computeLevels(){
+  const P=S.post;
+  let y=P + mm(S.bottomClear);
+  const out=[];
+  for(const r of S.rows){
+    out.push(clamp(y,0,(S.autoHeight?1e9:S.height)-P));
+    y += mm(r.height) + P + mm(r.gap);
+  }
+  return out;
+}
+function autoHeightFromRows(){
+  const P=S.post;
+  const sum=S.rows.reduce((a,r)=>a + mm(r.height) + P + mm(r.gap),0);
+  return P + mm(S.bottomClear) + sum + mm(S.topClear) + P;
+}
+
+/* =====================
+   Model builder (single source of truth)
+   M = { W,H,D,P, channels, levels, boxes[], bounds }
+===================== */
+function buildModel(){
+  const P=S.post, ch=channels(), L=computeLevels(), W=segments().reduce((a,b)=>a+b,0);
+  const H=S.autoHeight?autoHeightFromRows():S.height, D=S.depth, R=Math.min(S.runnerDepth, S.depth);
+  const M={W,H,D,P,channels:ch,levels:L,boxes:[]};
+
+  // Posts (front)
+  let x=0; for(const s of segments()){ if(s===P) M.boxes.push({type:'post',x,y:0,z:0,w:P,h:H,d:P}); x+=s; }
+  // Posts (rear)
+  if(S.rearFrame){ let xb=0; for(const s of segments()){ if(s===P) M.boxes.push({type:'post',x:xb,y:0,z:D-P,w:P,h:H,d:P}); xb+=s; } }
+
+  // Lintels
+  M.boxes.push({type:'lintel',x:0,y:0,z:0,w:W,h:P,d:P});
+  M.boxes.push({type:'lintel',x:0,y:H-P,z:0,w:W,h:P,d:P});
+  if(S.rearFrame){
+    M.boxes.push({type:'lintel',x:0,y:0,z:D-P,w:W,h:P,d:P});
+    M.boxes.push({type:'lintel',x:0,y:H-P,z:D-P,w:W,h:P,d:P});
+  }
+
+  // Supports (inside frame; avoid overlapping lintels)
+  const addSupport=(where)=>{
+    const on = where==='top'? S.topSupport : S.bottomSupport; if(!on) return;
+    const orient= where==='top'? S.topOrient : S.bottomOrient;
+    const size  = where==='top'? mm(S.topSize) : mm(S.bottomSize);
+    const yPos  = where==='top' ? clamp(P + mm(S.topDrop), P, H-2*P)
+                                 : clamp(H - 2*P - mm(S.bottomLift), P, H-2*P);
+    if(orient==='X'){ // across width
+      const zMid=(D-size)/2; M.boxes.push({type:'support',x:0,y:yPos,z:zMid,w:W,h:P,d:size});
+    }else{            // front-to-back
+      const xMid=(W-size)/2; M.boxes.push({type:'support',x:xMid,y:yPos,z:0,w:size,h:P,d:D-P});
+    }
+  };
+  addSupport('top'); addSupport('bottom'); if(S.extraBottomBeam) addSupport('bottom');
+
+  // Rails + bins (lip sits on rail)
+  ch.forEach((c)=>{
+    const xs=railXPositions(c);
+    L.forEach((y,idx)=>{
+      const allowBottom = (idx!==0 || S.bottomRowRails);
+      if(allowBottom) xs.forEach(bx => M.boxes.push({type:'rail',x:bx,y,z:0,w:P,h:P,d:R}));
+      if(S.showBins && allowBottom){
+        const bodyW=Math.min(mm(S.binBody), c.w-2);
+        const overall= bodyW + 2*mm(S.binFlange);
+        const bx=c.x + (c.w - overall)/2;
+        const lip=mm(S.binLip);
+        const binH=mm(S.rows[idx]?.height ?? S.binHeightDefault);
+        const over=mm(S.rows[idx]?.overhang ?? 0);
+        const dHere= Math.min(D + Math.max(0,over), D + over); // allow overhang
+        const yTop = Math.max(0, y + P - lip); // seat by lip
+        M.boxes.push({type:'bin',x:bx,y:yTop,z:0,w:overall,h:binH,d:dHere});
+      }
+    });
+  });
+
+  // Bounds
+  const min=[Infinity,Infinity,Infinity], max=[-Infinity,-Infinity,-Infinity];
+  M.boxes.forEach(b=>{ min[0]=Math.min(min[0],b.x); min[1]=Math.min(min[1],b.y); min[2]=Math.min(min[2],b.z);
+                       max[0]=Math.max(max[0],b.x+b.w); max[1]=Math.max(max[1],b.y+b.h); max[2]=Math.max(max[2],b.z+b.d); });
+  if(!isFinite(min[0])){ min[0]=min[1]=min[2]=0; max[0]=max[1]=max[2]=10; }
+  M.bounds={min,max};
+  return M;
+}
+
+/* =====================
+   3D renderer (canvas)
+===================== */
+const c3d = ()=>document.getElementById('c3d');
+let yaw=0.5, pitch=0.3, zoom=1;
+
+function sizeCanvas(cvs){
+  const dpr=Math.max(1,window.devicePixelRatio||1);
+  const r=cvs.getBoundingClientRect(); const w=Math.max(1,Math.floor(r.width*dpr)), h=Math.max(1,Math.floor(r.height*dpr));
+  if(cvs.width!==w||cvs.height!==h){ cvs.width=w; cvs.height=h; cvs.getContext('2d').setTransform(dpr,0,0,dpr,0,0); }
+}
+function makeBoxFaces(x,y,z,w,h,d,color='#ddd',alpha=1,edge='#333'){
+  const v=[[x,y,z],[x+w,y,z],[x+w,y+h,z],[x,y+h,z],[x,y,z+d],[x+w,y,z+d],[x+w,y+h,z+d],[x,y+h,z+d]];
+  const q=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[3,2,6,7]];
+  return q.map(idx=>({pts:idx.map(i=>v[i]), color, alpha, edge}));
+}
+function drawGrid(ctx,w,h){
+  ctx.fillStyle='#0e0e0e'; ctx.fillRect(0,0,w,h); ctx.strokeStyle='#1e1e1e';
+  for(let x=0;x<w;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for(let y=0;y<h;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+}
+function render3D(M){
+  const cvs=c3d(); if(!cvs) return; const ctx=cvs.getContext('2d'); sizeCanvas(cvs); drawGrid(ctx,cvs.width,cvs.height);
+
+  // faces from model
+  const faces=[];
+  M.boxes.forEach(b=>{
+    const color = b.type==='post'?COLORS.post: b.type==='lintel'?COLORS.lintel: b.type==='rail'?COLORS.rail: b.type==='bin'?COLORS.bin: b.type==='support'?COLORS.support:'#ddd';
+    const alpha = b.type==='bin'?0.65:1;
+    makeBoxFaces(b.x,b.y,b.z,b.w,b.h,b.d,color,alpha,'#333').forEach(f=>faces.push(f));
+  });
+
+  // fit
+  const {min,max}=M.bounds, cx=(min[0]+max[0])/2, cy=(min[1]+max[1])/2, cz=(min[2]+max[2])/2;
+  const radius=Math.sqrt((max[0]-min[0])**2+(max[1]-min[1])**2+(max[2]-min[2])**2)/2;
+  const f=700, target=Math.max(1,Math.min(cvs.width,cvs.height)*0.45), camDist=Math.max(radius+1, radius*(1+f/target))*Math.max(1,zoom);
+
+  const rotY=(p,a)=>[p[0]*Math.cos(a)+p[2]*Math.sin(a),p[1],-p[0]*Math.sin(a)+p[2]*Math.cos(a)];
+  const rotX=(p,a)=>[p[0],p[1]*Math.cos(a)-p[2]*Math.sin(a),p[1]*Math.sin(a)+p[2]*Math.cos(a)];
+  const proj=pt=>{ const p0=[pt[0]-cx,pt[1]-cy,pt[2]-cz]; const p1=rotY(p0,yaw); const p2=rotX(p1,pitch); const z=camDist-p2[2]; const s=f/z; return [cvs.width/2+p2[0]*s, cvs.height/2-p2[1]*s, z]; };
+
+  faces.forEach(f=>{ const tp=f.pts.map(proj); f.scr=tp.map(p=>[p[0],p[1]]); f.avgZ=tp.reduce((a,b)=>a+b[2],0)/tp.length; });
+  faces.sort((a,b)=>b.avgZ-a.avgZ);
+
+  ctx.lineWidth=1.2; faces.forEach(f=>{ ctx.beginPath(); f.scr.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.fillStyle=f.color.startsWith('rgba')?f.color:rgba(f.color,f.alpha??1); ctx.strokeStyle=f.edge; ctx.fill(); ctx.stroke(); });
+}
+function bind3DInteractions(){
+  const cvs=c3d(); if(!cvs) return;
+  cvs.addEventListener('dblclick', ()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); });
+  cvs.addEventListener('wheel', e=>{ zoom=clamp(zoom+(e.deltaY>0?0.1:-0.1),0.5,3); renderAll(); }, {passive:true});
+  let drag=false,lx=0,ly=0;
+  cvs.addEventListener('mousedown',e=>{ drag=true; lx=e.clientX; ly=e.clientY; });
+  window.addEventListener('mouseup',()=>drag=false);
+  window.addEventListener('mousemove',e=>{ if(!drag) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; yaw+=dx*0.01; pitch=clamp(pitch+dy*0.01,-1.1,1.1); renderAll(); });
+  document.getElementById('tbFit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
+  document.getElementById('tbPlus').onclick=()=>{ zoom=clamp(zoom-0.1,0.5,3); renderAll(); };
+  document.getElementById('tbMinus').onclick=()=>{ zoom=clamp(zoom+0.1,0.5,3); renderAll(); };
+  document.getElementById('tbReset').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
+  document.getElementById('fit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
+}
+
+/* =====================
+   2D renderers (read model only)
+===================== */
+function size2D(cvs){ sizeCanvas(cvs); }
+function drawDim(ctx,x1,y1,x2,y2,label,align='center'){ ctx.strokeStyle='#bbb'; ctx.fillStyle='#ddd'; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); const mx=(x1+x2)/2,my=(y1+y2)/2; ctx.font='11px sans-serif'; ctx.textAlign=align; ctx.textBaseline='middle'; ctx.fillText(label,mx,my); }
+
+function renderPlan(M){
+  const cvs=document.getElementById('cplan'), ctx=cvs.getContext('2d'); size2D(cvs);
+  const w=cvs.width,h=cvs.height; drawGrid(ctx,w,h);
+  const pad=26, s=Math.min((w-2*pad)/M.W, (h-2*pad)/M.D), ox=pad, oy=pad;
+
+  // Boundary & width
+  ctx.strokeStyle=COLORS.line; ctx.strokeRect(ox,oy,M.W*s,M.D*s);
+  drawDim(ctx,ox,oy-12,ox+M.W*s,oy-12,`W ${M.W} mm`);
+
+  // Front posts
+  M.boxes.filter(b=>b.type==='post' && b.z===0).forEach(b=>{
+    ctx.fillStyle=COLORS.post; ctx.fillRect(ox+b.x*s, oy, b.w*s, M.D*s);
+  });
+  // Rear posts (hint)
+  if(S.rearFrame){
+    M.boxes.filter(b=>b.type==='post' && Math.abs(b.z-(M.D-M.P))<1e-3).forEach(b=>{
+      ctx.save(); ctx.globalAlpha=.6; ctx.setLineDash([4,3]); ctx.strokeStyle=COLORS.dash;
+      ctx.strokeRect(ox+b.x*s, oy+(M.D-b.d)*s, b.w*s, b.d*s); ctx.restore();
+    });
+  }
+
+  // Channel labels vs target
+  ctx.font='11px sans-serif'; ctx.textBaseline='top';
+  M.channels.forEach(c=>{
+    const cx=ox+c.x*s, cw=c.w*s; const good=Math.abs(c.w - S.openingTarget) < 0.5;
+    ctx.strokeStyle=good?'#44aa44':'#ff5555';
+    drawDim(ctx,cx,oy+M.D*s+12,cx+cw,oy+M.D*s+12,`${c.w} mm`);
+    if(!good){ ctx.fillStyle='#ff5555'; ctx.fillText(`target ${S.openingTarget} → Δ${(c.w-S.openingTarget).toFixed(1)} mm`, cx, oy+M.D*s+24); }
+  });
+
+  // Rail footprints
+  ctx.globalAlpha=.35; ctx.fillStyle='#2b66ff';
+  M.boxes.filter(b=>b.type==='rail').forEach(b=>{ ctx.fillRect(ox+b.x*s, oy+b.z*s, b.w*s, b.d*s); });
+  ctx.globalAlpha=1;
+}
+
+function renderFront(M){
+  const cvs=document.getElementById('cfront'), ctx=cvs.getContext('2d'); size2D(cvs);
+  const w=cvs.width,h=cvs.height; drawGrid(ctx,w,h);
+  const pad=26, s=Math.min((w-2*pad)/M.W, (h-2*pad)/M.H), ox=pad, oy=pad;
+  ctx.strokeStyle=COLORS.line; ctx.strokeRect(ox,oy,M.W*s,M.H*s);
+  drawDim(ctx,ox,oy-12,ox+M.W*s,oy-12,`W ${M.W} mm`);
+  drawDim(ctx,ox-12,oy,ox-12,oy+M.H*s,`H ${M.H} mm`,'right');
+
+  // lintels front
+  M.boxes.filter(b=>b.type==='lintel'&&b.z===0).forEach(b=>{ ctx.fillStyle=COLORS.lintel; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
+  // supports
+  M.boxes.filter(b=>b.type==='support').forEach(b=>{ ctx.fillStyle=COLORS.support; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
+  // rails
+  M.boxes.filter(b=>b.type==='rail').forEach(b=>{ ctx.fillStyle=COLORS.rail; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
+  // posts front
+  M.boxes.filter(b=>b.type==='post'&&b.z===0).forEach(b=>{ ctx.fillStyle=COLORS.post; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
+  // bins
+  if(S.showBins) M.boxes.filter(b=>b.type==='bin').forEach(b=>{ ctx.fillStyle=COLORS.bin; ctx.fillRect(ox+b.x*s, oy+b.y*s, b.w*s, b.h*s); });
+}
+
+function renderSide(M){
+  const cvs=document.getElementById('cside'), ctx=cvs.getContext('2d'); size2D(cvs);
+  const w=cvs.width,h=cvs.height; drawGrid(ctx,w,h);
+  const pad=26, s=Math.min((w-2*pad)/M.D, (h-2*pad)/M.H), ox=pad, oy=pad;
+
+  ctx.strokeStyle=COLORS.line; ctx.strokeRect(ox,oy,M.D*s,M.H*s);
+  drawDim(ctx,ox,oy-12,ox+M.D*s,oy-12,`D ${M.D} mm`);
+  drawDim(ctx,ox-12,oy,ox-12,oy+M.H*s,`H ${M.H} mm`,'right');
+
+  // rails (depth × post)
+  ctx.fillStyle=COLORS.rail;
+  M.boxes.filter(b=>b.type==='rail').forEach(b=>{
+    ctx.fillRect(ox + b.z*s, oy + b.y*s, b.d*s, b.h*s);
+  });
+  // bins (lip already baked into b.y)
+  if(S.showBins){
+    ctx.fillStyle=COLORS.bin;
+    M.boxes.filter(b=>b.type==='bin').forEach(b=>{
+      ctx.fillRect(ox + b.z*s, oy + b.y*s, b.d*s, b.h*s);
+    });
+  }
+}
+
+/* =====================
+   Summary & Cut List
+===================== */
+function renderSummary(M){
+  const el=document.getElementById('summary'); const C=M.channels.length;
+  const postsFront=C+1, postsBack=S.rearFrame?(C+1):0, postsTot=postsFront+postsBack;
+  const lintelsFront=2, lintelsBack=S.rearFrame?2:0, lintelsTot=lintelsFront+lintelsBack;
+  const railsActual=M.boxes.filter(b=>b.type==='rail').length;
+  const supportCount=M.boxes.filter(b=>b.type==='support').length;
+  el.innerHTML=`<div><b>Overall</b> W ${M.W} × D ${M.D} × H ${M.H} mm</div>
+    <div><b>Openings</b> ${M.channels.map(c=>c.w).join(' + ')} mm</div>
+    <div><b>Posts</b> ${postsTot} <span class="ok">(front ${postsFront}${postsBack?` + back ${postsBack}`:''})</span></div>
+    <div><b>Rails</b> ${railsActual}</div>
+    <div><b>Lintels</b> ${lintelsTot} <span class="ok">(front ${lintelsFront}${lintelsBack?` + back ${lintelsBack}`:''})</span></div>
+    <div><b>Supports</b> ${supportCount}</div>`;
+}
+function renderCutList(M){
+  const railLen=Math.min(S.runnerDepth,S.depth);
+  const railsActual=M.boxes.filter(b=>b.type==='rail').length;
+  const el=document.getElementById('cutlist');
+  el.innerHTML=`<div><b>Cut List</b></div>
+    <div>Posts: ${M.channels.length+1} front${S.rearFrame?`, ${M.channels.length+1} back`:''} — length <b>${M.H}</b> mm</div>
+    <div>Lintels: ${S.rearFrame?4:2} pcs — length <b>${M.W}</b> mm</div>
+    <div>Rails: ${railsActual} pcs — length <b>${railLen}</b> mm (usable depth)</div>`;
+  el.classList.toggle('hidden', !S.showCutList);
+}
+
+/* =====================
+   UI bindings
+===================== */
+function bindInputs(){
+  const num=(id,key,min=-Infinity,max=Infinity)=>{ const el=document.getElementById(id); el.oninput=()=>{ S[key]=clamp(mm(el.value),min,max); renderAll(); }; };
+  const chk=(id,key)=>{ const el=document.getElementById(id); el.onchange=()=>{ S[key]=el.checked; renderAll(); }; };
+  const sel=(id,key)=>{ const el=document.getElementById(id); el.onchange=()=>{ S[key]=el.value; renderAll(); }; };
+
+  num('height','height',200,3000); document.getElementById('autoHeight').onchange=e=>{ S.autoHeight=e.target.checked; renderAll(); };
+  num('depth','depth',50,2000); num('runnerDepth','runnerDepth',10,2000); num('post','post',10,200);
+  chk('rearFrame','rearFrame');
+
+  // Pattern text (normalized on use)
+  document.getElementById('patternText').oninput=e=>{ S.patternText=e.target.value; renderAll(); };
+  document.getElementById('addCol').onclick=()=>{
+    const P=S.post; const seg=parseList(S.patternText); // append "open,P"
+    const lastOpen = channels().at(-1)?.w ?? 283;
+    let out=normalizeSegments(seg,P);
+    out.splice(out.length-1,0,lastOpen,P); // insert before last post
+    S.patternText=out.join(','); document.getElementById('patternText').value=S.patternText; renderAll();
+  };
+  document.getElementById('remCol').onclick=()=>{
+    const P=S.post; let out=normalizeSegments(parseList(S.patternText),P);
+    if(out.length>3){ out.splice(out.length-2,2); S.patternText=out.join(','); document.getElementById('patternText').value=S.patternText; renderAll(); }
+  };
+
+  // Rows UI
+  function rebuildRowsUI(){
+    const box=document.getElementById('rows'); box.innerHTML='';
+    S.rows.forEach((r,i)=>{
+      const wrap=document.createElement('div'); wrap.className='split';
+      wrap.innerHTML=`
+        <div class="ctl"><label>Row ${i+1} height</label><input value="${r.height}"></div>
+        <div class="ctl"><label>Gap above</label><input value="${r.gap}"></div>
+        <div class="ctl"><label>Overhang depth</label><input value="${r.overhang}"></div>`;
+      const ins=wrap.querySelectorAll('input');
+      ins[0].oninput=e=>{ S.rows[i].height=mm(e.target.value); renderAll(); };
+      ins[1].oninput=e=>{ S.rows[i].gap=mm(e.target.value); renderAll(); };
+      ins[2].oninput=e=>{ S.rows[i].overhang=mm(e.target.value); renderAll(); };
+      box.appendChild(wrap);
+    });
+    document.getElementById('openingsView').textContent = channels().map(c=>c.w).join(' + ')+' mm';
+  }
+  rebuildRowsUI();
+  document.getElementById('addRow').onclick=()=>{ S.rows.push({height:95,gap:10,overhang:0}); rebuildRowsUI(); renderAll(); };
+  document.getElementById('remRow').onclick=()=>{ if(S.rows.length>1) S.rows.pop(); rebuildRowsUI(); renderAll(); };
+
+  // Global clearances & rails
+  num('topClear','topClear',0,2000); num('bottomClear','bottomClear',0,2000); chk('bottomRowRails','bottomRowRails');
+  sel('railMode','railMode');
+
+  // Supports
+  chk('topSupport','topSupport'); sel('topOrient','topOrient'); num('topDrop','topDrop',0,2000); num('topSize','topSize',10,200);
+  chk('bottomSupport','bottomSupport'); sel('bottomOrient','bottomOrient'); num('bottomLift','bottomLift',0,2000); num('bottomSize','bottomSize',10,200);
+  chk('extraBottomBeam','extraBottomBeam');
+
+  // Bin helper
+  num('binBody','binBody',50,1200); num('binFlange','binFlange',0,40); num('binLip','binLip',0,30);
+  num('binSlack','binSlack',0,50); num('binHeightDefault','binHeightDefault',20,400); chk('showBins','showBins');
+  function refreshSuggestion(){ const sug=Math.ceil(mm(S.binBody)+2*mm(S.binFlange)+mm(S.binSlack)); document.getElementById('suggest').textContent=`Suggested opening: ${sug} mm`; return sug; }
+  document.getElementById('applyOpening').onclick=()=>{
+    const v=refreshSuggestion(); const P=S.post; const arr=normalizeSegments(parseList(S.patternText),P);
+    // rewrite all channel widths to suggested v (keep posts)
+    const out=arr.map(n=> n===P?P:v);
+    S.patternText=out.join(','); document.getElementById('patternText').value=S.patternText; renderAll();
+  };
+
+  // View mode + cut list
+  const app=document.getElementById('appRoot');
+  function setView(mode){
+    S.viewMode=mode;
+    app.classList.toggle('single', mode!=='quad');
+    ['pane-3d','pane-front','pane-side','pane-plan'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    if(mode==='quad'){ ['pane-3d','pane-front','pane-side','pane-plan'].forEach(id=>document.getElementById(id).classList.add('active')); }
+    else{
+      const map={ '3d':'pane-3d','plan':'pane-plan','front':'pane-front','side':'pane-side' };
+      document.getElementById(map[mode]).classList.add('active');
+    }
+    renderAll();
+  }
+  document.getElementById('vmQuad').onclick=()=>setView('quad');
+  document.getElementById('vm3d').onclick =()=>setView('3d');
+  document.getElementById('vmPlan').onclick=()=>setView('plan');
+  document.getElementById('vmFront').onclick=()=>setView('front');
+  document.getElementById('vmSide').onclick =()=>setView('side');
+
+  document.getElementById('toggleCutlist').onclick=()=>{ S.showCutList=!S.showCutList; renderAll(); };
+
+  // initial
+  refreshSuggestion();
+}
+
+/* =====================
+   Tests (minimal, non-blocking)
+===================== */
+function runTests(){
+  const T=[], eq=(a,b,e=1e-6)=>Math.abs(a-b)<=e;
+  T.push({name:'normalize collapses double posts', pass:(()=>{const P=43; const n=normalizeSegments([P,283,P,P,283,P,P],P); return n.join(',')==='43,283,43,283,43';})()});
+  T.push({name:'two rails per opening (edges)', pass:(()=>{const ch={x:43,w:283}; return railXPositions(ch).length===2;})()});
+  T.push({name:'lip placement', pass:(()=>{const P=43, lip=9, y=200; return (y+P-lip)===234;})()});
+  const el=document.getElementById('tests'); if(el) el.innerHTML=T.map(t=>`<div class="${t.pass?'ok':'ng'}">${t.pass?'✓':'✗'} ${t.name}</div>`).join('');
+}
+
+/* =====================
+   Orchestrator
+===================== */
+function renderAll(){
+  // keep runner depth clamped
+  S.runnerDepth=Math.min(mm(S.runnerDepth), mm(S.depth));
+  const M=buildModel();
+  render3D(M); renderPlan(M); renderFront(M); renderSide(M); renderSummary(M); renderCutList(M); runTests();
+  document.getElementById('openingsView').textContent = channels().map(c=>c.w).join(' + ')+' mm';
+}
+function init(){
+  bind3DInteractions();
+  bindInputs();
+  renderAll();
+}
+window.addEventListener('DOMContentLoaded', init);
+</script>
+<script>
+/* ---------- Alerts + hotkeys (no geometry changes) ---------- */
+(function(){
+  // Inject an "Alerts" panel just under the title in the sidebar
+  const sidebar = document.getElementById('controls');
+  const h1 = sidebar.querySelector('h1');
+  const banner = document.createElement('div');
+  banner.id = 'alerts';
+  banner.className = 'grp';
+  banner.innerHTML = '<h2>Alerts</h2><div id="alertMsgs" class="muted">No issues.</div>';
+  sidebar.insertBefore(banner, h1 ? h1.nextSibling : sidebar.firstChild);
+
+  function updateAlerts(){
+    const M = buildModel();
+    const msgs = [];
+    // 1) Pattern normalization (collapses accidental double posts)
+    const arr = parseList(S.patternText);
+    const norm = normalizeSegments(arr, S.post);
+    if (norm.length !== arr.length || norm.some((v,i)=>v!==arr[i])) {
+      msgs.push('Pattern normalized (duplicate posts collapsed): ' + norm.join(','));
+    }
+    // 2) Openings far from target
+    const off = M.channels.filter(c => Math.abs(c.w - S.openingTarget) >= 0.5);
+    if (off.length) msgs.push(`${off.length} opening(s) differ from target by ≥ 0.5 mm.`);
+    // 3) Runner depth clamp info
+    if (S.runnerDepth > S.depth) msgs.push(`Runner depth ${S.runnerDepth} clamped to carcass depth ${S.depth}.`);
+    // 4) Bottom rails
+    if (!S.bottomRowRails) msgs.push('Bottom row rails: OFF (first level has no rails).');
+
+    document.getElementById('alertMsgs').innerHTML =
+      msgs.length ? msgs.map(m => `<div>• ${m}</div>`).join('') : 'No issues.';
+  }
+
+  // Hotkeys: 1..5 to change view, F for Fit, +/- for zoom
+  window.addEventListener('keydown', (e)=>{
+    if (e.target && ['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+    if (e.key === '1') document.getElementById('vmQuad').click();
+    if (e.key === '2') document.getElementById('vm3d').click();
+    if (e.key === '3') document.getElementById('vmPlan').click();
+    if (e.key === '4') document.getElementById('vmFront').click();
+    if (e.key === '5') document.getElementById('vmSide').click();
+    if (e.key.toLowerCase() === 'f') document.getElementById('fit').click();
+    if (e.key === '+') { zoom = clamp(zoom - 0.1, 0.5, 3); renderAll(); }
+    if (e.key === '-') { zoom = clamp(zoom + 0.1, 0.5, 3); renderAll(); }
+  });
+
+  // Hook renderAll so alerts refresh every time
+  const _renderAll = window.renderAll;
+  window.renderAll = function(){
+    _renderAll();
+    updateAlerts();
+  };
+
+  // First run
+  updateAlerts();
+})();
+</script>
+</html>
+</html>
