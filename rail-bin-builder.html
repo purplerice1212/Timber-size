@@ -72,7 +72,7 @@
         <canvas id="c3d"></canvas>
         <div class="hud">3D</div>
         <div class="dim" id="dim3d"></div>
-        <div class="gridNote">Drag to orbit • Scroll to zoom • Double-click to reset</div>
+        <div class="gridNote">Drag to orbit • Scroll/pinch to zoom • Double-click to reset</div>
         <div class="toolbar">
           <button class="btn" id="tbFit">Fit</button>
           <button class="btn" id="tbPlus">+</button>
@@ -444,12 +444,44 @@ function render3D(M){
 }
 function bind3DInteractions(){
   const cvs=c3d(); if(!cvs) return;
+  cvs.style.touchAction='none';
   cvs.addEventListener('dblclick', ()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); });
   cvs.addEventListener('wheel', e=>{ zoom=clamp(zoom+(e.deltaY>0?0.1:-0.1),0.5,3); renderAll(); }, {passive:true});
-  let drag=false,lx=0,ly=0;
-  cvs.addEventListener('mousedown',e=>{ drag=true; lx=e.clientX; ly=e.clientY; });
-  window.addEventListener('mouseup',()=>drag=false);
-  window.addEventListener('mousemove',e=>{ if(!drag) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; yaw+=dx*0.01; pitch=clamp(pitch+dy*0.01,-1.1,1.1); renderAll(); });
+  const pts=new Map();
+  let dragId=null,startDist=0,startZoom=1;
+  cvs.addEventListener('pointerdown',e=>{
+    cvs.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===1){
+      dragId=e.pointerId;
+    }else if(pts.size===2){
+      const arr=[...pts.values()];
+      startDist=Math.hypot(arr[0].x-arr[1].x, arr[0].y-arr[1].y);
+      startZoom=zoom;
+    }
+  });
+  cvs.addEventListener('pointermove',e=>{
+    if(!pts.has(e.pointerId)) return;
+    const p=pts.get(e.pointerId);
+    const dx=e.clientX-p.x, dy=e.clientY-p.y;
+    p.x=e.clientX; p.y=e.clientY;
+    if(pts.size===2){
+      const arr=[...pts.values()];
+      const dist=Math.hypot(arr[0].x-arr[1].x, arr[0].y-arr[1].y);
+      if(startDist>0) zoom=clamp(startZoom*startDist/dist,0.5,3);
+      renderAll();
+    }else if(e.pointerId===dragId){
+      yaw+=dx*0.01; pitch=clamp(pitch+dy*0.01,-1.1,1.1); renderAll();
+    }
+  });
+  const end=e=>{
+    pts.delete(e.pointerId);
+    if(e.pointerId===dragId) dragId=null;
+    if(pts.size<2) startDist=0;
+  };
+  cvs.addEventListener('pointerup',end);
+  cvs.addEventListener('pointerleave',end);
+  cvs.addEventListener('pointercancel',end);
   document.getElementById('tbFit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(); };
   document.getElementById('tbPlus').onclick=()=>{ zoom=clamp(zoom-0.1,0.5,3); renderAll(); };
   document.getElementById('tbMinus').onclick=()=>{ zoom=clamp(zoom+0.1,0.5,3); renderAll(); };
