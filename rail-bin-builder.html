@@ -327,14 +327,18 @@ function computeLevels(){
   const out=[];
   for(const r of S.rows){
     out.push(clamp(y,0,(S.autoHeight?1e9:S.height)-P));
+    // Height of row + lintel + gap above that row
     y += mm(r.height) + P + mm(r.gap);
   }
   return out;
 }
 function autoHeightFromRows(){
-  const P=S.post;
-  const sum=S.rows.reduce((a,r)=>a + mm(r.height) + P + mm(r.gap),0);
-  return P + mm(S.bottomClear) + sum + mm(S.topClear) + P;
+  // Total height = caps + lintels + row heights (+ gaps)
+  const P=S.post; // lintel thickness
+  const lintels = P * (S.rows.length + 1); // one at bottom, one between each row, one at top
+  const heights = S.rows.reduce((a,r)=>a + mm(r.height),0);
+  const gaps    = S.rows.reduce((a,r)=>a + mm(r.gap),0);
+  return lintels + mm(S.bottomClear) + mm(S.topClear) + heights + gaps;
 }
 
 /* =====================
@@ -381,15 +385,17 @@ function buildModel(){
       const allowBottom = (idx!==0 || S.bottomRowRails);
       if(allowBottom) xs.forEach(bx => M.boxes.push({type:'rail',x:bx,y,z:0,w:P,h:P,d:R}));
       if(S.showBins && allowBottom){
+        const row=S.rows[idx]||{};
         const bodyW=Math.min(mm(S.binBody), c.w-2);
         const overall= bodyW + 2*mm(S.binFlange);
         const bx=c.x + (c.w - overall)/2;
         const lip=mm(S.binLip);
-        const binH=mm(S.rows[idx]?.height ?? S.binHeightDefault);
-        const over=mm(S.rows[idx]?.overhang ?? 0);
+        const binH=mm(row.height ?? S.binHeightDefault);
+        const over=mm(row.overhang ?? 0); // per-row overhang
+        const gap=mm(row.gap ?? 0);        // per-row gap (clearance above)
         const dHere= Math.min(D + Math.max(0,over), D + over); // allow overhang
         const yTop = Math.max(0, y + P - lip); // seat by lip
-        M.boxes.push({type:'bin',x:bx,y:yTop,z:0,w:overall,h:binH,d:dHere});
+        M.boxes.push({type:'bin',x:bx,y:yTop,z:0,w:overall,h:binH,d:dHere, gap});
       }
     });
   });
