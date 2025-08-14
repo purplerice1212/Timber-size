@@ -406,12 +406,8 @@ function buildModel(){
     });
   });
 
-  // Bounds
-  const min=[Infinity,Infinity,Infinity], max=[-Infinity,-Infinity,-Infinity];
-  M.boxes.forEach(b=>{ min[0]=Math.min(min[0],b.x); min[1]=Math.min(min[1],b.y); min[2]=Math.min(min[2],b.z);
-                       max[0]=Math.max(max[0],b.x+b.w); max[1]=Math.max(max[1],b.y+b.h); max[2]=Math.max(max[2],b.z+b.d); });
-  if(!isFinite(min[0])){ min[0]=min[1]=min[2]=0; max[0]=max[1]=max[2]=10; }
-  M.bounds={min,max};
+  // Bounds (frame only; ignore bins so rotation pivots at frame center)
+  M.bounds = {min:[0,0,0], max:[W,H,D]};
   // expose model for external consumers (e.g., views, debug panels)
   window.M = M;
   return M;
@@ -449,10 +445,11 @@ function render3D(M){
     makeBoxFaces(b.x,b.y,b.z,b.w,b.h,b.d,color,alpha,'#333').forEach(f=>faces.push(f));
   });
 
-  // fit
-  const {min,max}=M.bounds, cx=(min[0]+max[0])/2, cy=(min[1]+max[1])/2, cz=(min[2]+max[2])/2;
-  const radius=Math.sqrt((max[0]-min[0])**2+(max[1]-min[1])**2+(max[2]-min[2])**2)/2;
-  const f=700, target=Math.max(1,Math.min(cvs.width,cvs.height)*0.45), camDist=Math.max(radius+1, radius*(1+f/target))*Math.max(1,zoom);
+  // fit - center on frame dimensions
+  const cx = M.W / 2, cy = M.H / 2, cz = M.D / 2;
+  const radius = Math.sqrt(M.W**2 + M.H**2 + M.D**2) / 2;
+  const f = 700, target = Math.max(1, Math.min(cvs.width, cvs.height) * 0.45);
+  const camDist = Math.max(radius + 1, radius * (1 + f / target)) * Math.max(1, zoom);
 
   const rotY=(p,a)=>[p[0]*Math.cos(a)+p[2]*Math.sin(a),p[1],-p[0]*Math.sin(a)+p[2]*Math.cos(a)];
   const rotX=(p,a)=>[p[0],p[1]*Math.cos(a)-p[2]*Math.sin(a),p[1]*Math.sin(a)+p[2]*Math.cos(a)];
