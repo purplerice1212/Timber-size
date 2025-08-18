@@ -328,11 +328,17 @@ function railXPositions(ch){
   if(S.railMode==='centered') return [ch.x + (ch.w - S.post)/2];
   return [ch.x, ch.x + ch.w - S.post];
 }
+let rowOverflow=false;
 function computeLevels(){
   const P=S.post;
   let y=P + mm(S.bottomClear);
   const out=[];
+  rowOverflow=false;
   for(const r of S.rows){
+    if(!S.autoHeight && y > S.height - P){
+      rowOverflow=true;
+      break;
+    }
     out.push(clamp(y,0,(S.autoHeight?1e9:S.height)-P));
     // Height of row + lintel + gap above that row
     y += mm(r.height) + P + mm(r.gap);
@@ -355,7 +361,7 @@ function autoHeightFromRows(){
 function buildModel(){
   const P=S.post, ch=channels(), L=computeLevels(), W=segments().reduce((a,b)=>a+b,0);
   const H=S.autoHeight?autoHeightFromRows():S.height, D=S.depth, R=Math.min(S.runnerDepth, S.depth);
-  const M={W,H,D,P,channels:ch,levels:L,boxes:[]};
+  const M={W,H,D,P,channels:ch,levels:L,rowOverflow,boxes:[]};
 
   // Posts (front)
   let x=0; for(const s of segments()){ if(s===P) M.boxes.push({type:'post',x,y:0,z:0,w:P,h:H,d:P}); x+=s; }
@@ -860,8 +866,10 @@ window.addEventListener('DOMContentLoaded', init);
     if (S.runnerDepth > S.depth) msgs.push(`Runner depth ${S.runnerDepth} clamped to carcass depth ${S.depth}.`);
     // 4) Bottom rails
     if (!S.bottomRowRails) msgs.push('Bottom row rails: OFF (first level has no rails).');
+    // 5) Rows exceed manual height
+    if (!S.autoHeight && M.rowOverflow) msgs.push('Rows exceed manual height.');
 
-    // 5) Timber overlap
+    // 6) Timber overlap
     const timber = M.boxes.filter(b => ['post','lintel','rail','support'].includes(b.type));
     outer: for(let i=0;i<timber.length;i++){
       for(let j=i+1;j<timber.length;j++){
