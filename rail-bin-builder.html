@@ -330,12 +330,12 @@ function railXPositions(ch){
 }
 function computeLevels(){
   const P=S.post;
-  let y=P + mm(S.bottomClear);
+  let y=2*P + mm(S.bottomClear); // track rail tops
   const out=[];
   for(const r of S.rows){
-    out.push(clamp(y,0,(S.autoHeight?1e9:S.height)-P));
-    // Height of row + lintel + gap above that row
-    y += mm(r.height) + P + mm(r.gap);
+    out.push(clamp(y,0,(S.autoHeight?1e9:S.height)));
+    // Height of row + gap above that row + lintel thickness
+    y += mm(r.height) + mm(r.gap) + P;
   }
   return out;
 }
@@ -390,7 +390,7 @@ function buildModel(){
     const xs=railXPositions(c);
     L.forEach((y,idx)=>{
       const allowBottom = (idx!==0 || S.bottomRowRails);
-      if(allowBottom) xs.forEach(bx => M.boxes.push({type:'rail',x:bx,y,z:0,w:P,h:P,d:R}));
+      if(allowBottom) xs.forEach(bx => M.boxes.push({type:'rail',x:bx,y:y-P,z:0,w:P,h:P,d:R}));
       if(S.showBins && allowBottom){
         const row=S.rows[idx]||{};
         const bodyW=Math.min(mm(S.binBody), c.w-2);
@@ -401,7 +401,7 @@ function buildModel(){
         const over=mm(row.overhang ?? 0); // per-row overhang
         const gap=mm(row.gap ?? 0);        // per-row gap (clearance above)
         const dHere= Math.min(D + Math.max(0,over), D + over); // allow overhang
-        const yTop = Math.max(0, y + P - lip); // seat by lip
+        const yTop = Math.max(0, y - lip); // seat by lip
         M.boxes.push({type:'bin',x:bx,y:yTop,z:0,w:overall,h:binH,d:dHere, gap});
       }
     });
@@ -807,6 +807,9 @@ function runTests(M){
   T.push({name:'post count', pass:(()=>{const expected=segments().filter(s=>s===S.post).length*(S.rearFrame?2:1); return M.boxes.filter(b=>b.type==='post').length===expected;})()});
   T.push({name:'lintel count', pass:(()=>{const expected=S.rearFrame?4:2; return M.boxes.filter(b=>b.type==='lintel').length===expected;})()});
   T.push({name:'rail count', pass:(()=>{const perOpening=(S.railMode==='centered'?1:2); const levelCount=S.rows.length-(S.bottomRowRails?0:1); const expected=channels().length*levelCount*perOpening; return M.boxes.filter(b=>b.type==='rail').length===expected;})()});
+
+  // bin position
+  T.push({name:'bins seat on rails', pass:(()=>{const rails=M.boxes.filter(b=>b.type==='rail'); const lip=mm(S.binLip); return M.boxes.filter(b=>b.type==='bin').every(bin=>rails.some(r=>eq(bin.y+lip, r.y+r.h)));})()});
 
   const el=document.getElementById('tests');
   if(el) el.innerHTML=T.map(t=>`<div class="${t.pass?'ok':'ng'}">${t.pass?'✓':'✗'} ${t.name}</div>`).join('');
