@@ -540,6 +540,10 @@ function drawDim(ctx,x1,y1,x2,y2,label,align='center',color='#ddd'){
   ctx.fillText(label,mx,my);
 }
 
+function getElevationScale(M, h, pad){
+  return (h-2*pad)/M.H;
+}
+
 function renderPlan(M){
   const cvs=document.getElementById('cplan'), ctx=cvs.getContext('2d'); size2D(cvs);
   const w=cvs.width,h=cvs.height; drawGrid(ctx,w,h);
@@ -586,7 +590,7 @@ function renderPlan(M){
 function renderFront(M){
   const cvs=document.getElementById('cfront'), ctx=cvs.getContext('2d'); size2D(cvs);
   const w=cvs.width,h=cvs.height; drawGrid(ctx,w,h);
-  const pad=26, s=Math.min((w-2*pad)/M.W, (h-2*pad)/M.H), ox=pad, oy=pad;
+  const pad=26, s=getElevationScale(M, h, pad), ox=pad, oy=pad;
   ctx.strokeStyle=COLORS.line; ctx.strokeRect(ox,oy,M.W*s,M.H*s);
   drawDim(ctx,ox,oy-12,ox+M.W*s,oy-12,`W ${M.W} mm`);
   drawDim(ctx,ox-12,oy,ox-12,oy+M.H*s,`H ${M.H} mm`,'right');
@@ -608,7 +612,7 @@ function renderFront(M){
 function renderSide(M){
   const cvs=document.getElementById('cside'), ctx=cvs.getContext('2d'); size2D(cvs);
   const w=cvs.width,h=cvs.height; drawGrid(ctx,w,h);
-  const pad=26, s=Math.min((w-2*pad)/M.D, (h-2*pad)/M.H), ox=pad, oy=pad;
+  const pad=26, s=getElevationScale(M, h, pad), ox=pad, oy=pad;
 
   ctx.strokeStyle=COLORS.line; ctx.strokeRect(ox,oy,M.D*s,M.H*s);
   drawDim(ctx,ox,oy-12,ox+M.D*s,oy-12,`D ${M.D} mm`);
