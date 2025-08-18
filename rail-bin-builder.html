@@ -140,7 +140,7 @@
           <div class="ctl"><label>Height (manual)</label><input id="height" value="926" /></div>
           <div class="ctl"><label><input id="autoHeight" type="checkbox" checked /> Auto height</label></div>
           <div class="ctl"><label>Depth (overall)</label><input id="depth" value="420" /></div>
-          <div class="ctl"><label>Runner depth (usable)</label><input id="runnerDepth" value="420" /></div>
+          <div class="ctl"><label>Runner depth (usable) <small class="muted">clamped to carcass depth</small></label><input id="runnerDepth" value="420" title="Rails clamp to carcass depth" /></div>
           <div class="ctl"><label>Post size (square)</label><input id="post" value="43" /></div>
           <div class="ctl"><label><input id="rearFrame" type="checkbox" checked /> Rear frame (back posts + lintels)</label></div>
         </div>
@@ -800,8 +800,7 @@ function runTests(M){
   T.push({name:'normalize collapses double posts', pass:(()=>{const P=43; const n=normalizeSegments([P,283,P,P,283,P,P],P); return n.join(',')==='43,283,43,283,43';})()});
 
   // clamped dimensions
-  T.push({name:'runner depth clamped', pass:S.runnerDepth<=S.depth});
-  T.push({name:'rail depth clamped', pass:M.boxes.filter(b=>b.type==='rail').every(r=>r.d<=S.depth)});
+  T.push({name:'rail depth clamped', pass:M.boxes.filter(b=>b.type==='rail').every(r=>eq(r.d, Math.min(S.runnerDepth, S.depth)))});
 
   // component counts
   T.push({name:'post count', pass:(()=>{const expected=segments().filter(s=>s===S.post).length*(S.rearFrame?2:1); return M.boxes.filter(b=>b.type==='post').length===expected;})()});
@@ -817,7 +816,6 @@ function runTests(M){
 ===================== */
 function renderAll(rebuild=true){
   if(rebuild){
-    S.runnerDepth=Math.min(mm(S.runnerDepth), mm(S.depth));
     M=buildModel();
   }
   render3D(M); renderPlan(M); renderFront(M); renderSide(M); renderSummary(M); renderCutList(M); runTests(M);
