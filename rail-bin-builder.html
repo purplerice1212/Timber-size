@@ -699,7 +699,17 @@ function bindInputs(){
   const sel=(id,key)=>{ const el=document.getElementById(id); el.onchange=()=>{ S[key]=el.value; renderAll(); }; };
 
   num('height','height',200,3000); document.getElementById('autoHeight').onchange=e=>{ S.autoHeight=e.target.checked; renderAll(); };
-  num('depth','depth',50,2000); num('runnerDepth','runnerDepth',10,2000); num('post','post',10,200);
+  num('depth','depth',50,2000); num('runnerDepth','runnerDepth',10,2000);
+  const postEl=document.getElementById('post');
+  postEl.oninput=()=>{
+    const prev=S.post;
+    S.post=clamp(mm(postEl.value),10,200);
+    const arr=parseList(S.patternText).map(n=>n===prev?S.post:n);
+    const norm=normalizeSegments(arr,S.post);
+    S.patternText=norm.join(',');
+    document.getElementById('patternText').value=S.patternText;
+    renderAll();
+  };
   chk('rearFrame','rearFrame');
 
   // Pattern text (normalized on use)
