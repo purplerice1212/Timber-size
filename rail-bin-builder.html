@@ -371,19 +371,25 @@ function buildModel(){
   }
 
   // Supports (inside frame; avoid overlapping lintels)
-  const addSupport=(where)=>{
+  const addSupport=(where,type='support')=>{
     const on = where==='top'? S.topSupport : S.bottomSupport; if(!on) return;
     const orient= where==='top'? S.topOrient : S.bottomOrient;
     const size  = where==='top'? mm(S.topSize) : mm(S.bottomSize);
     const yPos  = where==='top' ? clamp(P + mm(S.topDrop), P, H-2*P)
                                  : clamp(H - 2*P - mm(S.bottomLift), P, H-2*P);
     if(orient==='X'){ // across width
-      const zMid=(D-size)/2; M.boxes.push({type:'support',x:0,y:yPos,z:zMid,w:W,h:P,d:size});
+      let zMid=(D-size)/2;
+      if(type==='supportBatten') zMid=clamp(zMid+1,0,D-size);
+      M.boxes.push({type,x:0,y:yPos,z:zMid,w:W,h:P,d:size});
     }else{            // front-to-back
-      const xMid=(W-size)/2; M.boxes.push({type:'support',x:xMid,y:yPos,z:0,w:size,h:P,d:D-P});
+      let xMid=(W-size)/2;
+      if(type==='supportBatten') xMid=clamp(xMid+1,0,W-size);
+      M.boxes.push({type,x:xMid,y:yPos,z:0,w:size,h:P,d:D-P});
     }
   };
-  addSupport('top'); addSupport('bottom'); if(S.extraBottomBeam) addSupport('bottom');
+  addSupport('top');
+  addSupport('bottom');
+  if(S.extraBottomBeam) addSupport('bottom','supportBatten');
 
   // Rails + bins (lip sits on rail)
   ch.forEach((c)=>{
@@ -650,7 +656,7 @@ function renderSummary(M){
   const postsFront=C+1, postsBack=S.rearFrame?(C+1):0, postsTot=postsFront+postsBack;
   const lintelsFront=2, lintelsBack=S.rearFrame?2:0, lintelsTot=lintelsFront+lintelsBack;
   const railsActual=M.boxes.filter(b=>b.type==='rail').length;
-  const supportCount=M.boxes.filter(b=>b.type==='support').length;
+  const supportCount=M.boxes.filter(b=>['support','supportBatten'].includes(b.type)).length;
   el.innerHTML=`<div><b>Overall</b> W ${M.W} × D ${M.D} × H ${M.H} mm</div>
     <div><b>Openings</b> ${M.channels.map(c=>c.w).join(' + ')} mm</div>
     <div><b>Posts</b> ${postsTot} <span class="ok">(front ${postsFront}${postsBack?` + back ${postsBack}`:''})</span></div>
@@ -659,19 +665,19 @@ function renderSummary(M){
     <div><b>Supports</b> ${supportCount}</div>`;
 }
 function renderCutList(M){
-  const parts={post:new Map(), lintel:new Map(), rail:new Map(), support:new Map()};
+  const parts={post:new Map(), lintel:new Map(), rail:new Map(), support:new Map(), supportBatten:new Map()};
   M.boxes.forEach(b=>{
     if(!parts[b.type]) return;
     let len=0;
     if(b.type==='post') len=b.h;
     else if(b.type==='lintel') len=b.w;
     else if(b.type==='rail') len=Math.min(b.d, Math.min(S.runnerDepth,S.depth));
-    else if(b.type==='support') len=Math.max(b.w,b.d);
+    else if(b.type==='support' || b.type==='supportBatten') len=Math.max(b.w,b.d);
     parts[b.type].set(len,(parts[b.type].get(len)||0)+1);
   });
 
   let html='<div><b>Cut List</b></div>';
-  const labels={post:'Posts', lintel:'Lintels', rail:'Rails', support:'Supports'};
+  const labels={post:'Posts', lintel:'Lintels', rail:'Rails', support:'Supports', supportBatten:'Support Battens'};
   for(const type of Object.keys(parts)){
     for(const [len,count] of [...parts[type]].sort((a,b)=>a[0]-b[0])){
       const note= type==='rail' ? ' (usable depth)' : '';
@@ -862,7 +868,7 @@ window.addEventListener('DOMContentLoaded', init);
     if (!S.bottomRowRails) msgs.push('Bottom row rails: OFF (first level has no rails).');
 
     // 5) Timber overlap
-    const timber = M.boxes.filter(b => ['post','lintel','rail','support'].includes(b.type));
+    const timber = M.boxes.filter(b => ['post','lintel','rail','support','supportBatten'].includes(b.type));
     outer: for(let i=0;i<timber.length;i++){
       for(let j=i+1;j<timber.length;j++){
         const a=timber[i], b=timber[j];
