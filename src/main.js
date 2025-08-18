@@ -10,7 +10,7 @@ function init() {
   renderFront(document.getElementById('front'), model);
   renderSide(document.getElementById('side'), model);
   renderPlan(document.getElementById('plan'), model);
-  render3d(document.getElementById('view3d'), model);
+  render3d(document.getElementById('three'), model);
 }
 
 window.addEventListener('DOMContentLoaded', init);

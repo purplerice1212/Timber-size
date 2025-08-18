@@ -1,0 +1,42 @@
+name: Build single HTML and release
+
+on:
+  push:
+    tags:
+      - "v*"        # e.g., v0.1.0
+  workflow_dispatch: {}
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci || npm i
+
+      - name: Build bundle
+        run: npm run build
+
+      - name: Pack single HTML
+        run: npm run pack
+
+      - name: Upload artifact (for this run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app.single.html
+          path: dist/app.single.html
+
+      - name: Create GitHub Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/app.single.html
+          generate_release_notes: true
