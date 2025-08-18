@@ -694,7 +694,7 @@ function toggleCutlist(){
    UI bindings
 ===================== */
 function bindInputs(){
-  const num=(id,key,min=-Infinity,max=Infinity)=>{ const el=document.getElementById(id); el.oninput=()=>{ S[key]=clamp(mm(el.value),min,max); renderAll(); }; };
+  const num=(id,key,min=-Infinity,max=Infinity,cb)=>{ const el=document.getElementById(id); el.oninput=()=>{ S[key]=clamp(mm(el.value),min,max); if(cb) cb(); renderAll(); }; };
   const chk=(id,key)=>{ const el=document.getElementById(id); el.onchange=()=>{ S[key]=el.checked; renderAll(); }; };
   const sel=(id,key)=>{ const el=document.getElementById(id); el.onchange=()=>{ S[key]=el.value; renderAll(); }; };
 
@@ -747,14 +747,14 @@ function bindInputs(){
   chk('extraBottomBeam','extraBottomBeam');
 
   // Bin helper
-  num('binBody','binBody',50,1200); num('binFlange','binFlange',0,40); num('binLip','binLip',0,30);
-  num('binSlack','binSlack',0,50); num('binHeightDefault','binHeightDefault',20,400); chk('showBins','showBins');
-  function refreshSuggestion(){ const sug=Math.ceil(mm(S.binBody)+2*mm(S.binFlange)+mm(S.binSlack)); document.getElementById('suggest').textContent=`Suggested opening: ${sug} mm`; return sug; }
+  num('binBody','binBody',50,1200, refreshSuggestion); num('binFlange','binFlange',0,40, refreshSuggestion); num('binLip','binLip',0,30);
+  num('binSlack','binSlack',0,50, refreshSuggestion); num('binHeightDefault','binHeightDefault',20,400); chk('showBins','showBins');
+  function refreshSuggestion(){ const sug=Math.ceil(mm(S.binBody)+2*mm(S.binFlange)+mm(S.binSlack)); S.openingTarget=sug; document.getElementById('suggest').textContent=`Suggested opening: ${sug} mm`; renderAll(false); return sug; }
   document.getElementById('applyOpening').onclick=()=>{
     const v=refreshSuggestion(); const P=S.post; const arr=normalizeSegments(parseList(S.patternText),P);
     // rewrite all channel widths to suggested v (keep posts)
     const out=arr.map(n=> n===P?P:v);
-    S.patternText=out.join(','); document.getElementById('patternText').value=S.patternText; renderAll();
+    S.patternText=out.join(','); document.getElementById('patternText').value=S.patternText; S.openingTarget=v; renderAll(false); renderAll();
   };
 
   // View mode + cut list
