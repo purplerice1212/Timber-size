@@ -31,7 +31,7 @@ Timber-size is a single-file HTML tool for planning timber storage layouts. It g
 | F-014 | Cut List toggle (show/hide) | ✅ | toggleCutlist |
 | F-015 | Single geometry source for all views | ✅ | buildModel(S) → M.boxes |
 | F-016 | Bottom row has/no rails (option) | ✅ | bottomRowRails |
-| F-017 | Per-row overhang depth (bin can exceed carcass) | ✅ | overhang per row → dHere |
+| F-017 | Per-row overhang depth (bin can exceed carcass) | ✅ | overhang per row → dHere (clamped by MAX_OVERHANG) |
 | F-018 | Per-row gap above (bin clearance) | ✅ | gap per row |
 | F-019 | Auto height formula (caps + lintels + rows) | ✅ | autoHeightFromRows() |
 | F-020 | Plan opening labels: ✓ within ±0.5 mm, else Δ red | ✅ | In renderPlan() |
@@ -47,7 +47,7 @@ Timber-size is a single-file HTML tool for planning timber storage layouts. It g
 | L-005 | Rails per opening | edges: [x, x+w−post]; centered: [x+(w−post)/2] | railXPositions() |
 | L-006 | Rail depth clamp | usable = min(runnerDepth, depth) | Build & all views |
 | L-007 | Bin sitting | yTop = level + post − binLip | Build (then views read M) |
-| L-008 | Bin depth per row | dHere = min(D + max(0, over), D + over) | allows overhang |
+| L-008 | Bin depth per row | dHere = clamp(D + over, 0, D + MAX_OVERHANG) | limits overhang |
 | L-009 | Supports Y | top: clamp(post + topDrop, post, H−2·post); bottom: clamp(H−2·post−bottomLift, …) | Avoids lintel overlap |
 | L-010 | Rear frame | Mirror posts/lintels at z = D − post | Toggle |
 | L-011 | Apply opening | Rewrite patternText posts-kept, channels→suggested | Button handler |

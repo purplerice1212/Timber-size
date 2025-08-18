@@ -246,6 +246,7 @@
 ===================== */
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v??0)));
 const mm=v=>Number(v||0);
+const MAX_OVERHANG = 300; // max extra depth beyond carcass
 const COLORS={ post:'#f5dfe0', lintel:'#e8e8e8', rail:'#c9e1ff', support:'#f6c16c', bin:'rgba(255,179,179,.65)', line:'#cfcfcf', dash:'#d8a7ad' };
 COLORS.supportBatten = COLORS.support;
 function rgba(hex,a){const c=hex.replace('#','');const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);return `rgba(${r},${g},${b},${a})`;}
@@ -356,6 +357,7 @@ function buildModel(){
   const P=S.post, ch=channels(), L=computeLevels(), W=segments().reduce((a,b)=>a+b,0);
   const H=S.autoHeight?autoHeightFromRows():S.height, D=S.depth, R=Math.min(S.runnerDepth, S.depth);
   const M={W,H,D,P,channels:ch,levels:L,boxes:[]};
+  let binDepthClamped=false;
 
   // Posts (front)
   let x=0; for(const s of segments()){ if(s===P) M.boxes.push({type:'post',x,y:0,z:0,w:P,h:H,d:P}); x+=s; }
@@ -400,12 +402,16 @@ function buildModel(){
         const binH=mm(row.height ?? S.binHeightDefault);
         const over=mm(row.overhang ?? 0); // per-row overhang
         const gap=mm(row.gap ?? 0);        // per-row gap (clearance above)
-        const dHere= Math.min(D + Math.max(0,over), D + over); // allow overhang
+        const dReq = D + over;
+        const dHere = clamp(dReq, 0, D + MAX_OVERHANG);
+        if(dHere !== dReq) binDepthClamped = true;
         const yTop = Math.max(0, y + P - lip); // seat by lip
         M.boxes.push({type:'bin',x:bx,y:yTop,z:0,w:overall,h:binH,d:dHere, gap});
       }
     });
   });
+
+  M.binDepthClamped = binDepthClamped;
 
   // Bounds (frame components only; exclude bins so rotation pivots at frame center)
   const bMin=[Infinity,Infinity,Infinity];
@@ -858,10 +864,12 @@ window.addEventListener('DOMContentLoaded', init);
     if (off.length) msgs.push(`${off.length} opening(s) differ from target by ≥ 0.5 mm.`);
     // 3) Runner depth clamp info
     if (S.runnerDepth > S.depth) msgs.push(`Runner depth ${S.runnerDepth} clamped to carcass depth ${S.depth}.`);
-    // 4) Bottom rails
+    // 4) Bin depth clamp info
+    if (M.binDepthClamped) msgs.push(`Bin depth clamped to 0–${S.depth + MAX_OVERHANG} mm.`);
+    // 5) Bottom rails
     if (!S.bottomRowRails) msgs.push('Bottom row rails: OFF (first level has no rails).');
 
-    // 5) Timber overlap
+    // 6) Timber overlap
     const timber = M.boxes.filter(b => ['post','lintel','rail','support'].includes(b.type));
     outer: for(let i=0;i<timber.length;i++){
       for(let j=i+1;j<timber.length;j++){
