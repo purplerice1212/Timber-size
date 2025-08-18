@@ -407,10 +407,10 @@ function buildModel(){
     });
   });
 
-  // Bounds (frame components only; exclude bins so rotation pivots at frame center)
+  // Bounds (include bins so camera framing covers all geometry)
   const bMin=[Infinity,Infinity,Infinity];
   const bMax=[-Infinity,-Infinity,-Infinity];
-  M.boxes.filter(b=>b.type!=='bin').forEach(b=>{
+  M.boxes.forEach(b=>{
     bMin[0]=Math.min(bMin[0], b.x);
     bMin[1]=Math.min(bMin[1], b.y);
     bMin[2]=Math.min(bMin[2], b.z);
@@ -428,7 +428,7 @@ function buildModel(){
    3D renderer (canvas)
 ===================== */
 const c3d = ()=>document.getElementById('c3d');
-let yaw=0.5, pitch=0.3, zoom=1;
+const state3D = {yaw:0.5, pitch:0.3, zoom:1};
 
 function sizeCanvas(cvs){
   const dpr=Math.max(1,window.devicePixelRatio||1);
@@ -456,7 +456,7 @@ function render3D(M){
     makeBoxFaces(b.x,b.y,b.z,b.w,b.h,b.d,color,alpha,'#333').forEach(f=>faces.push(f));
   });
 
-  // fit - center on model bounds (exclude bins)
+  // fit - center on model bounds
   const cx = (M.bounds.min[0] + M.bounds.max[0]) / 2;
   const cy = (M.bounds.min[1] + M.bounds.max[1]) / 2;
   const cz = (M.bounds.min[2] + M.bounds.max[2]) / 2;
@@ -465,12 +465,14 @@ function render3D(M){
     (M.bounds.max[1] - M.bounds.min[1])**2 +
     (M.bounds.max[2] - M.bounds.min[2])**2
   ) / 2;
-  const f = 700, target = Math.max(1, Math.min(cvs.width, cvs.height) * 0.45);
-  const camDist = Math.max(radius + 1, radius * (1 + f / target)) * Math.max(1, zoom);
+  const r=cvs.getBoundingClientRect();
+  const viewport = Math.min(r.width, r.height);
+  const f = 700, target = Math.max(1, viewport * 0.45);
+  const camDist = Math.max(radius + 1, radius * (1 + f / target)) * state3D.zoom;
 
   const rotY=(p,a)=>[p[0]*Math.cos(a)+p[2]*Math.sin(a),p[1],-p[0]*Math.sin(a)+p[2]*Math.cos(a)];
   const rotX=(p,a)=>[p[0],p[1]*Math.cos(a)-p[2]*Math.sin(a),p[1]*Math.sin(a)+p[2]*Math.cos(a)];
-  const proj=pt=>{ const p0=[pt[0]-cx,pt[1]-cy,pt[2]-cz]; const p1=rotY(p0,yaw); const p2=rotX(p1,pitch); const z=camDist-p2[2]; const s=f/z; return [cvs.width/2+p2[0]*s, cvs.height/2-p2[1]*s, z]; };
+  const proj=pt=>{ const p0=[pt[0]-cx,pt[1]-cy,pt[2]-cz]; const p1=rotY(p0,state3D.yaw); const p2=rotX(p1,state3D.pitch); const z=camDist-p2[2]; const s=f/z; return [cvs.width/2+p2[0]*s, cvs.height/2-p2[1]*s, z]; };
 
   faces.forEach(f=>{ const tp=f.pts.map(proj); f.scr=tp.map(p=>[p[0],p[1]]); f.avgZ=tp.reduce((a,b)=>a+b[2],0)/tp.length; });
   faces.sort((a,b)=>b.avgZ-a.avgZ);
@@ -479,8 +481,8 @@ function render3D(M){
 }
 function bind3DInteractions(){
   const cvs=c3d(); if(!cvs) return;
-  cvs.addEventListener('dblclick', ()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(false); });
-  cvs.addEventListener('wheel', e=>{ zoom=clamp(zoom+(e.deltaY>0?0.1:-0.1),0.5,3); renderAll(false); }, {passive:true});
+  cvs.addEventListener('dblclick', ()=>{ state3D.yaw=0.5; state3D.pitch=0.3; state3D.zoom=1; renderAll(false); });
+  cvs.addEventListener('wheel', e=>{ state3D.zoom=clamp(state3D.zoom+(e.deltaY>0?0.1:-0.1),0.5,3); renderAll(false); }, {passive:true});
   const pointers=new Map();
   let pinchDist=0,pinchZoom=1;
   const pos=e=>({x:e.clientX,y:e.clientY});
@@ -491,7 +493,7 @@ function bind3DInteractions(){
     if(pointers.size===2){
       const [p1,p2]=Array.from(pointers.values());
       pinchDist=dist(p1,p2);
-      pinchZoom=zoom;
+      pinchZoom=state3D.zoom;
     }
     cvs.setPointerCapture(e.pointerId);
   });
@@ -502,12 +504,12 @@ function bind3DInteractions(){
     pointers.set(e.pointerId,curr);
     if(pointers.size===1){
       const dx=curr.x-prev.x, dy=curr.y-prev.y;
-      yaw+=dx*0.01; pitch=clamp(pitch+dy*0.01,-1.1,1.1);
+      state3D.yaw+=dx*0.01; state3D.pitch=clamp(state3D.pitch+dy*0.01,-1.1,1.1);
       renderAll(false);
     }else if(pointers.size===2){
       const [p1,p2]=Array.from(pointers.values());
       const d=dist(p1,p2);
-      zoom=clamp(pinchZoom*(pinchDist/d),0.5,3);
+      state3D.zoom=clamp(pinchZoom*(pinchDist/d),0.5,3);
       renderAll(false);
     }
   });
@@ -521,11 +523,11 @@ function bind3DInteractions(){
   cvs.addEventListener('pointerup',endPointer);
   cvs.addEventListener('pointerleave',endPointer);
   cvs.addEventListener('pointercancel',endPointer);
-  document.getElementById('tbFit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(false); };
-  document.getElementById('tbPlus').onclick=()=>{ zoom=clamp(zoom-0.1,0.5,3); renderAll(false); };
-  document.getElementById('tbMinus').onclick=()=>{ zoom=clamp(zoom+0.1,0.5,3); renderAll(false); };
-  document.getElementById('tbReset').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(false); };
-  document.getElementById('fit').onclick=()=>{ yaw=0.5; pitch=0.3; zoom=1; renderAll(false); };
+  document.getElementById('tbFit').onclick=()=>{ state3D.yaw=0.5; state3D.pitch=0.3; state3D.zoom=1; renderAll(false); };
+  document.getElementById('tbPlus').onclick=()=>{ state3D.zoom=clamp(state3D.zoom-0.1,0.5,3); renderAll(false); };
+  document.getElementById('tbMinus').onclick=()=>{ state3D.zoom=clamp(state3D.zoom+0.1,0.5,3); renderAll(false); };
+  document.getElementById('tbReset').onclick=()=>{ state3D.yaw=0.5; state3D.pitch=0.3; state3D.zoom=1; renderAll(false); };
+  document.getElementById('fit').onclick=()=>{ state3D.yaw=0.5; state3D.pitch=0.3; state3D.zoom=1; renderAll(false); };
 }
 
 /* =====================
@@ -886,8 +888,8 @@ window.addEventListener('DOMContentLoaded', init);
     if (e.key === '4') document.getElementById('vmFront').click();
     if (e.key === '5') document.getElementById('vmSide').click();
     if (e.key.toLowerCase() === 'f') document.getElementById('fit').click();
-    if (e.key === '+') { zoom = clamp(zoom - 0.1, 0.5, 3); renderAll(false); }
-    if (e.key === '-') { zoom = clamp(zoom + 0.1, 0.5, 3); renderAll(false); }
+    if (e.key === '+') { state3D.zoom = clamp(state3D.zoom - 0.1, 0.5, 3); renderAll(false); }
+    if (e.key === '-') { state3D.zoom = clamp(state3D.zoom + 0.1, 0.5, 3); renderAll(false); }
   });
 
   // Hook renderAll so alerts refresh every time
