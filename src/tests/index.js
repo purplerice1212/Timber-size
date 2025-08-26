@@ -2,10 +2,11 @@ import {testParser} from './parser.js';
 import {testClamp} from './clamp.js';
 import {testCounts} from './counts.js';
 import {testStateSetters} from './state-setters.js';
+import {testExtraSupport} from './supports.js';
 import {fileURLToPath} from 'url';
 
 export function runTests(){
-  const results = [...testParser(), ...testClamp(), ...testCounts(), ...testStateSetters()];
+  const results = [...testParser(), ...testClamp(), ...testCounts(), ...testStateSetters(), ...testExtraSupport()];
   if (typeof console !== 'undefined' && console.table) console.table(results);
   return results;
 }

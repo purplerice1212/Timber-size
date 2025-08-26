@@ -25,6 +25,8 @@ const state = {
   bottomLift:8,
   bottomSize:43,
   extraBottomBeam:false,
+  extraBottomOrient:'X',
+  extraBottomLift:8,
   binBody:283,
   binFlange:9.5,
   binLip:9,
