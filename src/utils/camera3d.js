@@ -1,9 +1,12 @@
 export function makeCamera(bounds) {
-  const distance = Math.max(bounds.width, bounds.depth) * 2;
+  const width = bounds.max.x - bounds.min.x;
+  const height = bounds.max.y - bounds.min.y;
+  const depth = bounds.max.z - bounds.min.z;
+  const distance = Math.max(width, depth) * 2;
   return {
     distance,
-    cx: bounds.width / 2,
-    cy: bounds.height / 2
+    cx: width / 2,
+    cy: height / 2
   };
 }
 

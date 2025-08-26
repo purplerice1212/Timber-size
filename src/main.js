@@ -7,10 +7,11 @@ import {render3d} from './views/view3d.js';
 
 function init() {
   const model = buildModel(S);
-  renderFront(document.getElementById('front'), model);
-  renderSide(document.getElementById('side'), model);
-  renderPlan(document.getElementById('plan'), model);
-  render3d(document.getElementById('three'), model);
+  const opts = {showDimensions: true, showOpenings: true};
+  renderFront(document.getElementById('front'), model, opts);
+  renderSide(document.getElementById('side'), model, opts);
+  renderPlan(document.getElementById('plan'), model, opts);
+  render3d(document.getElementById('three'), model, opts);
 }
 
 window.addEventListener('DOMContentLoaded', init);
