@@ -209,7 +209,14 @@
           <div class="ctl"><label>Bottom lift (mm)</label><input id="bottomLift" value="8" /></div>
           <div class="ctl"><label>Bottom size (mm)</label><input id="bottomSize" value="43" /></div>
         </div>
-        <div class="ctl"><label><input id="extraBottomBeam" type="checkbox" /> Extra bottom beam</label></div>
+        <div class="row">
+          <div class="ctl"><label><input id="extraBottomBeam" type="checkbox" /> Extra bottom beam</label></div>
+          <div class="ctl">
+            <label>Extra beam orientation</label>
+            <select id="extraBottomOrient"><option value="X" selected>Across width</option><option value="Z">Front-to-back</option></select>
+          </div>
+          <div class="ctl"><label>Extra beam lift (mm)</label><input id="extraBottomLift" value="8" /></div>
+        </div>
       </div>
 
       <div class="grp">
@@ -269,7 +276,7 @@ const S = {
   railMode:'edges', // 'edges' | 'centered'
   topSupport:true, topOrient:'X', topDrop:0, topSize:43,
   bottomSupport:true, bottomOrient:'X', bottomLift:8, bottomSize:43,
-  extraBottomBeam:false,
+  extraBottomBeam:false, extraBottomOrient:'X', extraBottomLift:8,
 
   // Bin / opening helper (bins sit on rails by lip)
   binBody:283, binFlange:9.5, binLip:9, binSlack:6,
@@ -377,19 +384,22 @@ function buildModel(){
   }
 
   // Supports (inside frame; avoid overlapping lintels)
-  const addSupport=(where)=>{
-    const on = where==='top'? S.topSupport : S.bottomSupport; if(!on) return;
-    const orient= where==='top'? S.topOrient : S.bottomOrient;
-    const size  = where==='top'? mm(S.topSize) : mm(S.bottomSize);
-    const yPos  = where==='top' ? clamp(P + mm(S.topDrop), P, H-2*P)
-                                 : clamp(H - 2*P - mm(S.bottomLift), P, H-2*P);
+  const addSupport=(where, opts={})=>{
+    const on = opts.on ?? (where==='top'? S.topSupport : S.bottomSupport); if(!on) return;
+    const orient= opts.orient ?? (where==='top'? S.topOrient : S.bottomOrient);
+    const size  = opts.size  ?? (where==='top'? mm(S.topSize) : mm(S.bottomSize));
+    const yPos  = opts.yPos  ?? (where==='top'
+      ? clamp(P + mm(S.topDrop), P, H-2*P)
+      : clamp(H - 2*P - mm(S.bottomLift), P, H-2*P));
     if(orient==='X'){ // across width
       const zMid=(D-size)/2; M.boxes.push({type:'support',x:0,y:yPos,z:zMid,w:W,h:P,d:size});
     }else{            // front-to-back
       const xMid=(W-size)/2; M.boxes.push({type:'support',x:xMid,y:yPos,z:0,w:size,h:P,d:D-P});
     }
   };
-  addSupport('top'); addSupport('bottom'); if(S.extraBottomBeam) addSupport('bottom');
+  addSupport('top');
+  addSupport('bottom');
+  if(S.extraBottomBeam) addSupport('bottom',{orient:S.extraBottomOrient, yPos:clamp(H - 2*P - mm(S.extraBottomLift), P, H-2*P)});
 
   // Rails + bins (lip sits on rail)
   ch.forEach((c)=>{
@@ -762,7 +772,7 @@ function bindInputs(){
   // Supports
   chk('topSupport','topSupport'); sel('topOrient','topOrient'); num('topDrop','topDrop',0,2000); num('topSize','topSize',10,200);
   chk('bottomSupport','bottomSupport'); sel('bottomOrient','bottomOrient'); num('bottomLift','bottomLift',0,2000); num('bottomSize','bottomSize',10,200);
-  chk('extraBottomBeam','extraBottomBeam');
+  chk('extraBottomBeam','extraBottomBeam'); sel('extraBottomOrient','extraBottomOrient'); num('extraBottomLift','extraBottomLift',0,2000);
 
   // Bin helper
   num('binBody','binBody',50,1200, refreshSuggestion); num('binFlange','binFlange',0,40, refreshSuggestion); num('binLip','binLip',0,30);

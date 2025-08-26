@@ -31,19 +31,22 @@ export function buildModel(S) {
   }
 
   // Supports
-  const addSupport=(where)=>{
-    const on = where==='top'? S.topSupport : S.bottomSupport; if(!on) return;
-    const orient= where==='top'? S.topOrient : S.bottomOrient;
-    const size  = where==='top'? mm(S.topSize) : mm(S.bottomSize);
-    const yPos  = where==='top' ? clamp(P + mm(S.topDrop), P, H-2*P)
-                                 : clamp(H - 2*P - mm(S.bottomLift), P, H-2*P);
+  const addSupport=(where, opts={})=>{
+    const on = opts.on ?? (where==='top'? S.topSupport : S.bottomSupport); if(!on) return;
+    const orient= opts.orient ?? (where==='top'? S.topOrient : S.bottomOrient);
+    const size  = opts.size  ?? (where==='top'? mm(S.topSize) : mm(S.bottomSize));
+    const yPos  = opts.yPos  ?? (where==='top'
+      ? clamp(P + mm(S.topDrop), P, H-2*P)
+      : clamp(H - 2*P - mm(S.bottomLift), P, H-2*P));
     if(orient==='X'){
       const zMid=(D-size)/2; M.boxes.push({type:'support',x:0,y:yPos,z:zMid,w:W,h:P,d:size});
     }else{
       const xMid=(W-size)/2; M.boxes.push({type:'support',x:xMid,y:yPos,z:0,w:size,h:P,d:D-P});
     }
   };
-  addSupport('top'); addSupport('bottom'); if(S.extraBottomBeam) addSupport('bottom');
+  addSupport('top');
+  addSupport('bottom');
+  if(S.extraBottomBeam) addSupport('bottom', {orient:S.extraBottomOrient, yPos:clamp(H - 2*P - mm(S.extraBottomLift), P, H-2*P)});
 
   // Rails and bins
   ch.forEach((c)=>{
