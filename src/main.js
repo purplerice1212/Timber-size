@@ -39,10 +39,12 @@ function hideRowOverflowWarning(){
 function render(){
   const model = buildModel(getState());
   if(model.rowOverflow){
+    // Show the warning banner but continue rendering with the
+    // clamped levels provided by the model.
     showRowOverflowWarning();
-    return;
+  }else{
+    hideRowOverflowWarning();
   }
-  hideRowOverflowWarning();
   const o = getState().showOverlays;
   const frontEl = document.getElementById('front');
   if (frontEl) {
