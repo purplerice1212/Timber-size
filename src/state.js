@@ -1,6 +1,34 @@
 export const S = {
-  width: 1000,
-  height: 1000,
-  depth: 600,
-  post: 50
+  height: 926,
+  autoHeight: true,
+  depth: 420,
+  runnerDepth: 420,
+  post: 43,
+  rearFrame: true,
+  patternText: '43,283,43,43,283,43,43',
+  rows: [
+    {height:120,gap:10,overhang:0},
+    {height:120,gap:10,overhang:0},
+    {height:120,gap:10,overhang:0},
+    {height:120,gap:10,overhang:0}
+  ],
+  topClear:10,
+  bottomClear:10,
+  bottomRowRails:false,
+  railMode:'edges',
+  topSupport:true,
+  topOrient:'X',
+  topDrop:0,
+  topSize:43,
+  bottomSupport:true,
+  bottomOrient:'X',
+  bottomLift:8,
+  bottomSize:43,
+  extraBottomBeam:false,
+  binBody:283,
+  binFlange:9.5,
+  binLip:9,
+  binSlack:6,
+  binHeightDefault:95,
+  showBins:true
 };

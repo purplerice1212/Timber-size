@@ -6,19 +6,23 @@ export function render3d(canvas, model) {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const cam = makeCamera(model.bounds);
+  const {min, max} = model.bounds;
+  const width = max[0] - min[0];
+  const height = max[1] - min[1];
+  const depth = max[2] - min[2];
+  const cam = makeCamera({width, height, depth});
   cam.cx = canvas.width / 2;
   cam.cy = canvas.height * 0.8;
   model.boxes.forEach(box => {
     const pts = [
-      {x: box.x, y: box.y, z: box.z},
-      {x: box.x + box.w, y: box.y, z: box.z},
-      {x: box.x + box.w, y: box.y + box.h, z: box.z},
-      {x: box.x, y: box.y + box.h, z: box.z},
-      {x: box.x, y: box.y, z: box.z + box.d},
-      {x: box.x + box.w, y: box.y, z: box.z + box.d},
-      {x: box.x + box.w, y: box.y + box.h, z: box.z + box.d},
-      {x: box.x, y: box.y + box.h, z: box.z + box.d}
+      {x: box.x - min[0], y: box.y - min[1], z: box.z - min[2]},
+      {x: box.x + box.w - min[0], y: box.y - min[1], z: box.z - min[2]},
+      {x: box.x + box.w - min[0], y: box.y + box.h - min[1], z: box.z - min[2]},
+      {x: box.x - min[0], y: box.y + box.h - min[1], z: box.z - min[2]},
+      {x: box.x - min[0], y: box.y - min[1], z: box.z + box.d - min[2]},
+      {x: box.x + box.w - min[0], y: box.y - min[1], z: box.z + box.d - min[2]},
+      {x: box.x + box.w - min[0], y: box.y + box.h - min[1], z: box.z + box.d - min[2]},
+      {x: box.x - min[0], y: box.y + box.h - min[1], z: box.z + box.d - min[2]}
     ];
     const p = pts.map(pt => project(pt, cam));
     drawPolygon(ctx, [p[0], p[1], p[2], p[3]]);
