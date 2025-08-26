@@ -17,8 +17,33 @@ import {renderPlan} from './views/plan.js';
 import {render3d, init3dControls} from './views/view3d.js';
 import './tests/index.js';
 
+function showRowOverflowWarning(){
+  let banner=document.getElementById('rowoverflow-warning');
+  if(!banner){
+    banner=document.createElement('div');
+    banner.id='rowoverflow-warning';
+    banner.textContent='Too many rows specified for the available height.';
+    Object.assign(banner.style,{
+      background:'#c00',color:'#fff',padding:'8px',textAlign:'center'
+    });
+    document.body.prepend(banner);
+  }
+  banner.style.display='block';
+  console.warn('Row overflow: some rows exceed available height');
+}
+
+function hideRowOverflowWarning(){
+  const banner=document.getElementById('rowoverflow-warning');
+  if(banner) banner.style.display='none';
+}
+
 function render(){
   const model = buildModel(getState());
+  if(model.rowOverflow){
+    showRowOverflowWarning();
+    return;
+  }
+  hideRowOverflowWarning();
   const o = getState().showOverlays;
   renderFront(document.getElementById('front'), model, o);
   renderSide(document.getElementById('side'), model, o);
