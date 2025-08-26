@@ -1,5 +1,6 @@
 import {typeColors} from '../utils/colors.js';
 import {getState, setCamera} from '../state.js';
+import {clamp} from '../utils/math.js';
 
 const camState = {yaw:0.5, pitch:0.3, zoom:1};
 let canvasRef, modelRef, overlayRef;
@@ -82,9 +83,6 @@ export function render3d(canvas, model, overlays=false){
     ctx.fillText(`W:${Math.round(width)} H:${Math.round(height)} D:${Math.round(depth)}`,10,20);
   }
 }
-
-function clamp(v,min,max){return v<min?min:v>max?max:v;}
-
 export function init3dControls(canvas){
   canvas.addEventListener('dblclick',()=>{
     camState.yaw=0.5; camState.pitch=0.3; camState.zoom=1;
