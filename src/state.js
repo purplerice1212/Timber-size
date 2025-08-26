@@ -46,6 +46,11 @@ function notify(){
   for(const fn of listeners) fn(state);
 }
 
+function parseNumber(value, min = 0){
+  const num = Number(value);
+  return Number.isFinite(num) && num >= min ? num : min;
+}
+
 export function getState(){
   return state;
 }
@@ -56,18 +61,18 @@ export function subscribe(fn){
 }
 
 export function setHeight(value){
-  state.height = Number(value);
+  state.height = parseNumber(value, 0);
   state.autoHeight = false;
   notify();
 }
 
 export function setDepth(value){
-  state.depth = Number(value);
+  state.depth = parseNumber(value, 0);
   notify();
 }
 
 export function setPost(value){
-  state.post = Number(value);
+  state.post = parseNumber(value, 0);
   notify();
 }
 
@@ -97,8 +102,8 @@ export function setViewMode(mode){
 }
 
 export function setCamera({yaw=state.yaw, pitch=state.pitch, zoom=state.zoom}, notifyChange=true){
-  state.yaw = yaw;
-  state.pitch = pitch;
-  state.zoom = zoom;
+  state.yaw = parseNumber(yaw, 0);
+  state.pitch = parseNumber(pitch, 0);
+  state.zoom = parseNumber(zoom, 0);
   if(notifyChange) notify();
 }
