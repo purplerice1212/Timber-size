@@ -7,12 +7,13 @@ export function computeLevels(S){
   const out = [];
   let overflow = false;
   for(const r of S.rows){
-    if(!S.autoHeight && y > S.height - P){
+    const h = mm(r.height);
+    if(!S.autoHeight && (y > S.height - P || y + h > S.height - P)){
       overflow = true;
       break;
     }
     out.push(clamp(y,0,(S.autoHeight?1e9:S.height)-P));
-    y += mm(r.height) + P + mm(r.gap);
+    y += h + P + mm(r.gap);
   }
   return {levels:out, rowOverflow:overflow};
 }
