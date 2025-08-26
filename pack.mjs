@@ -5,11 +5,19 @@ const read = (p) => fs.readFile(p, "utf8");
 
 await fs.mkdir("dist", { recursive: true });
 
-const [html, css, js] = await Promise.all([
+const bundle = "dist/bundle.js";
+const [html, css] = await Promise.all([
   read("index.html"),
-  read("styles.css").catch(() => ""),
-  read("dist/bundle.js")
+  read("styles.css").catch(() => "")
 ]);
+
+let js;
+try {
+  js = await read(bundle);
+} catch {
+  console.error(`Missing ${bundle}. Did you run 'npm run build'?`);
+  process.exit(1);
+}
 
 let single = html;
 

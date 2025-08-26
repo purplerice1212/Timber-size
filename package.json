@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=iife --minify --outfile=dist/bundle.js",
-    "pack": "node pack.mjs"
+    "pack": "npm run build && node pack.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.24.0"
