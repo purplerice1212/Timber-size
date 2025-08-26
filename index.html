@@ -8,6 +8,22 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <form id="controls">
+      <div>
+        <label>Width <input type="number" id="width" /></label>
+        <label>Height <input type="number" id="height" /></label>
+        <label>Depth <input type="number" id="depth" /></label>
+        <label>Post <input type="number" id="post" /></label>
+        <label>Pattern <input type="text" id="pattern" /></label>
+      </div>
+      <div>
+        <label><input type="checkbox" id="showFront" checked /> Front</label>
+        <label><input type="checkbox" id="showSide" checked /> Side</label>
+        <label><input type="checkbox" id="showPlan" checked /> Plan</label>
+        <label><input type="checkbox" id="showThree" checked /> 3D</label>
+      </div>
+    </form>
+
     <canvas id="front"></canvas>
     <canvas id="side"></canvas>
     <canvas id="plan"></canvas>
