@@ -15,7 +15,6 @@ import {renderFront} from './views/front.js';
 import {renderSide} from './views/side.js';
 import {renderPlan} from './views/plan.js';
 import {render3d, init3dControls} from './views/view3d.js';
-import './tests/index.js';
 
 function showRowOverflowWarning(){
   let banner=document.getElementById('rowoverflow-warning');
