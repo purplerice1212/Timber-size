@@ -4,6 +4,7 @@ import {renderFront} from './views/front.js';
 import {renderSide} from './views/side.js';
 import {renderPlan} from './views/plan.js';
 import {render3d} from './views/view3d.js';
+import './tests/index.js';
 
 function init() {
   const model = buildModel(S);
