@@ -1,4 +1,4 @@
-import {setHeight, setDepth, setPost, getState} from '../state.js';
+import {setHeight, setDepth, setPost, setCamera, getState} from '../state.js';
 
 export function testStateSetters(){
   const base = {...getState()};
@@ -18,10 +18,16 @@ export function testStateSetters(){
   setPost('bar');
   const postNaN = getState().post === 0;
 
+  setCamera({yaw:-1, pitch:-0.5});
+  const camNeg = getState().yaw === -1 && getState().pitch === -0.5;
+  setCamera({yaw:'a', pitch:'b'});
+  const camNaN = getState().yaw === -1 && getState().pitch === -0.5;
+
   // restore original state
   setHeight(base.height);
   setDepth(base.depth);
   setPost(base.post);
+  setCamera({yaw:base.yaw, pitch:base.pitch, zoom:base.zoom});
   const state = getState();
   state.autoHeight = base.autoHeight;
 
@@ -31,6 +37,8 @@ export function testStateSetters(){
     {name:'depth negative clamps to 0', pass:depthNeg},
     {name:'depth NaN clamps to 0', pass:depthNaN},
     {name:'post negative clamps to 0', pass:postNeg},
-    {name:'post NaN clamps to 0', pass:postNaN}
+    {name:'post NaN clamps to 0', pass:postNaN},
+    {name:'camera allows negative yaw/pitch', pass:camNeg},
+    {name:'camera ignores invalid yaw/pitch', pass:camNaN}
   ];
 }

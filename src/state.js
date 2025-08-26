@@ -104,8 +104,10 @@ export function setViewMode(mode){
 }
 
 export function setCamera({yaw=state.yaw, pitch=state.pitch, zoom=state.zoom}, notifyChange=true){
-  state.yaw = parseNumber(yaw, 0);
-  state.pitch = parseNumber(pitch, 0);
+  const y = Number(yaw);
+  state.yaw = Number.isFinite(y) ? y : state.yaw;
+  const p = Number(pitch);
+  state.pitch = Number.isFinite(p) ? p : state.pitch;
   state.zoom = parseNumber(zoom, 0);
   if(notifyChange) notify();
 }
