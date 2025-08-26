@@ -409,7 +409,7 @@ function buildModel(){
       if(allowBottom) xs.forEach(bx => M.boxes.push({type:'rail',x:bx,y,z:0,w:P,h:P,d:R}));
       if(S.showBins && allowBottom){
         const row=S.rows[idx]||{};
-        const bodyW=Math.min(mm(S.binBody), c.w-2);
+        const bodyW=Math.min(mm(S.binBody), Math.max(0, c.w - mm(S.binSlack)));
         const overall= bodyW + 2*mm(S.binFlange);
         const bx=c.x + (c.w - overall)/2;
         const lip=mm(S.binLip);
