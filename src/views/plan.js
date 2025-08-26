@@ -1,4 +1,4 @@
-import {drawRect, drawText} from '../utils/draw2d.js';
+import {drawRect, drawText, drawOverlayDimensions} from '../utils/draw2d.js';
 import {fitCanvas} from '../utils/fit.js';
 import {typeColors} from '../utils/colors.js';
 
@@ -10,15 +10,11 @@ export function renderPlan(canvas, model, overlays = false) {
     drawRect(ctx, box.x, box.z, box.w, box.d, color);
   });
   if (overlays) {
+    drawOverlayDimensions(ctx, model.bounds, [
+      {label: 'W', axis: 0},
+      {label: 'D', axis: 2}
+    ]);
     const scale = ctx.getTransform().a;
-    drawText(
-      ctx,
-      `W:${Math.round(max[0]-min[0])} D:${Math.round(max[2]-min[2])}`,
-      min[0] + 2/scale,
-      max[2] + 12/scale,
-      '#0f0',
-      'left'
-    );
     model.channels.forEach(c => {
       const cx = c.x + c.w / 2;
       drawText(ctx, Math.round(c.w).toString(), cx, max[2] + 12/scale, '#0f0');

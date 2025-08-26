@@ -27,3 +27,20 @@ export function drawText(ctx, text, x, y, color = '#fff', align = 'center') {
   ctx.fillText(text, sx, sy);
   ctx.restore();
 }
+
+export function drawOverlayDimensions(ctx, bounds, labels) {
+  const scale = ctx.getTransform().a;
+  const text = labels
+    .map(({label, axis}) => `${label}:${Math.round(bounds.max[axis] - bounds.min[axis])}`)
+    .join(' ');
+  const xAxis = labels[0].axis;
+  const yAxis = labels[1].axis;
+  drawText(
+    ctx,
+    text,
+    bounds.min[xAxis] + 2 / scale,
+    bounds.max[yAxis] + 12 / scale,
+    '#0f0',
+    'left'
+  );
+}
