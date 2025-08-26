@@ -1,2 +1,7 @@
-body{margin:0;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,50vh);}
-canvas{width:100%;height:100%;background:#111;}
+body{margin:0;}
+#view-controls{margin:4px;}
+#views{display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,50vh);}
+canvas{width:100%;height:100%;background:#111;display:block;}
+body.single #views{grid-template-columns:1fr;grid-template-rows:100vh;}
+body.single #views canvas{display:none;}
+body.single #views canvas.active{display:block;}

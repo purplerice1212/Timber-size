@@ -31,7 +31,13 @@ const state = {
   binSlack:6,
   binHeightDefault:95,
   showBins:true,
-  showOverlays:false
+  showOverlays:false,
+
+  // view / camera state
+  viewMode:'quad', // 'quad' | 'three' | 'plan' | 'front' | 'side'
+  yaw:0.5,
+  pitch:0.3,
+  zoom:1
 };
 
 const listeners = new Set();
@@ -83,4 +89,16 @@ export function toggleShowBins(value){
 export function toggleOverlays(value){
   state.showOverlays = value;
   notify();
+}
+
+export function setViewMode(mode){
+  state.viewMode = mode;
+  notify();
+}
+
+export function setCamera({yaw=state.yaw, pitch=state.pitch, zoom=state.zoom}, notifyChange=true){
+  state.yaw = yaw;
+  state.pitch = pitch;
+  state.zoom = zoom;
+  if(notifyChange) notify();
 }

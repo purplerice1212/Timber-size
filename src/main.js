@@ -7,13 +7,14 @@ import {
   setPatternText,
   toggleRearFrame,
   toggleShowBins,
-  toggleOverlays
+  toggleOverlays,
+  setViewMode
 } from './state.js';
 import {buildModel} from './model.js';
 import {renderFront} from './views/front.js';
 import {renderSide} from './views/side.js';
 import {renderPlan} from './views/plan.js';
-import {render3d} from './views/view3d.js';
+import {render3d, init3dControls} from './views/view3d.js';
 import './tests/index.js';
 
 function render(){
@@ -23,6 +24,12 @@ function render(){
   renderSide(document.getElementById('side'), model, o);
   renderPlan(document.getElementById('plan'), model, o);
   render3d(document.getElementById('three'), model, o);
+
+  const vm = getState().viewMode;
+  document.body.classList.toggle('single', vm !== 'quad');
+  document.querySelectorAll('#views canvas').forEach(c=>{
+    c.classList.toggle('active', vm === 'quad' ? true : c.id === vm);
+  });
 }
 
 function init() {
@@ -42,6 +49,19 @@ function init() {
   document.getElementById('rearFrame-toggle').addEventListener('change', e=>toggleRearFrame(e.target.checked));
   document.getElementById('showBins-toggle').addEventListener('change', e=>toggleShowBins(e.target.checked));
   document.getElementById('overlay-toggle').addEventListener('change', e=>toggleOverlays(e.target.checked));
+
+  document.querySelectorAll('#view-controls button').forEach(btn=>{
+    btn.addEventListener('click', ()=>setViewMode(btn.dataset.view));
+  });
+
+  document.querySelectorAll('#views canvas').forEach(cvs=>{
+    cvs.addEventListener('click', ()=>{
+      const vm = getState().viewMode;
+      setViewMode(vm === 'quad' ? cvs.id : 'quad');
+    });
+  });
+
+  init3dControls(document.getElementById('three'));
 
   subscribe(render);
   render();
