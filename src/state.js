@@ -30,7 +30,8 @@ const state = {
   binLip:9,
   binSlack:6,
   binHeightDefault:95,
-  showBins:true
+  showBins:true,
+  showOverlays:false
 };
 
 const listeners = new Set();
@@ -76,5 +77,10 @@ export function toggleRearFrame(value){
 
 export function toggleShowBins(value){
   state.showBins = value;
+  notify();
+}
+
+export function toggleOverlays(value){
+  state.showOverlays = value;
   notify();
 }

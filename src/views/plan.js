@@ -1,12 +1,32 @@
-import {drawRect} from '../utils/draw2d.js';
+import {drawRect, drawText} from '../utils/draw2d.js';
 import {fitCanvas} from '../utils/fit.js';
+import {typeColors} from '../utils/colors.js';
 
-export function renderPlan(canvas, model) {
+export function renderPlan(canvas, model, overlays = false) {
   const {min, max} = model.bounds;
-  const width = max[0] - min[0];
-  const height = max[2] - min[2];
-  const ctx = fitCanvas(canvas, {width, height});
+  const ctx = fitCanvas(canvas, {min:[min[0], min[2]], max:[max[0], max[2]]});
   model.boxes.forEach(box => {
-    drawRect(ctx, box.x - min[0], box.z - min[2], box.w, box.d);
+    const color = typeColors[box.type] || '#fff';
+    drawRect(ctx, box.x, box.z, box.w, box.d, color);
   });
+  if (overlays) {
+    const scale = ctx.getTransform().a;
+    drawText(
+      ctx,
+      `W:${Math.round(max[0]-min[0])} D:${Math.round(max[2]-min[2])}`,
+      min[0] + 2/scale,
+      max[2] + 12/scale,
+      '#0f0',
+      'left'
+    );
+    model.channels.forEach(c => {
+      const cx = c.x + c.w / 2;
+      drawText(ctx, Math.round(c.w).toString(), cx, max[2] + 12/scale, '#0f0');
+      ctx.beginPath();
+      ctx.moveTo(cx, min[2]);
+      ctx.lineTo(cx, max[2]);
+      ctx.strokeStyle = '#0f0';
+      ctx.stroke();
+    });
+  }
 }

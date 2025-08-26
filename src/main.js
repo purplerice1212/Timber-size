@@ -6,7 +6,8 @@ import {
   setPost,
   setPatternText,
   toggleRearFrame,
-  toggleShowBins
+  toggleShowBins,
+  toggleOverlays
 } from './state.js';
 import {buildModel} from './model.js';
 import {renderFront} from './views/front.js';
@@ -17,10 +18,11 @@ import './tests/index.js';
 
 function render(){
   const model = buildModel(getState());
-  renderFront(document.getElementById('front'), model);
-  renderSide(document.getElementById('side'), model);
-  renderPlan(document.getElementById('plan'), model);
-  render3d(document.getElementById('three'), model);
+  const o = getState().showOverlays;
+  renderFront(document.getElementById('front'), model, o);
+  renderSide(document.getElementById('side'), model, o);
+  renderPlan(document.getElementById('plan'), model, o);
+  render3d(document.getElementById('three'), model, o);
 }
 
 function init() {
@@ -31,6 +33,7 @@ function init() {
   document.getElementById('pattern-input').value = s.patternText;
   document.getElementById('rearFrame-toggle').checked = s.rearFrame;
   document.getElementById('showBins-toggle').checked = s.showBins;
+  document.getElementById('overlay-toggle').checked = s.showOverlays;
 
   document.getElementById('height-input').addEventListener('input', e=>setHeight(e.target.value));
   document.getElementById('depth-input').addEventListener('input', e=>setDepth(e.target.value));
@@ -38,6 +41,7 @@ function init() {
   document.getElementById('pattern-input').addEventListener('input', e=>setPatternText(e.target.value));
   document.getElementById('rearFrame-toggle').addEventListener('change', e=>toggleRearFrame(e.target.checked));
   document.getElementById('showBins-toggle').addEventListener('change', e=>toggleShowBins(e.target.checked));
+  document.getElementById('overlay-toggle').addEventListener('change', e=>toggleOverlays(e.target.checked));
 
   subscribe(render);
   render();
