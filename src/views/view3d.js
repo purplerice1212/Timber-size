@@ -1,7 +1,8 @@
-import {drawPolygon} from '../utils/draw2d.js';
+import {drawPolygon, drawText} from '../utils/draw2d.js';
 import {makeCamera, project} from '../utils/camera3d.js';
+import {typeColors} from '../utils/colors.js';
 
-export function render3d(canvas, model) {
+export function render3d(canvas, model, overlays = false) {
   const ctx = canvas.getContext('2d');
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
@@ -25,14 +26,18 @@ export function render3d(canvas, model) {
       {x: box.x - min[0], y: box.y + box.h - min[1], z: box.z + box.d - min[2]}
     ];
     const p = pts.map(pt => project(pt, cam));
-    drawPolygon(ctx, [p[0], p[1], p[2], p[3]]);
-    drawPolygon(ctx, [p[4], p[5], p[6], p[7]]);
+    const color = typeColors[box.type] || '#fff';
+    drawPolygon(ctx, [p[0], p[1], p[2], p[3]], color);
+    drawPolygon(ctx, [p[4], p[5], p[6], p[7]], color);
     for (let i = 0; i < 4; i++) {
       ctx.beginPath();
       ctx.moveTo(p[i].x, p[i].y);
       ctx.lineTo(p[i + 4].x, p[i + 4].y);
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = color;
       ctx.stroke();
     }
   });
+  if (overlays) {
+    drawText(ctx, `W:${Math.round(width)} H:${Math.round(height)} D:${Math.round(depth)}`, 10, 20, '#0f0', 'left');
+  }
 }
