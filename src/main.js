@@ -45,48 +45,128 @@ function render(){
   }
   hideRowOverflowWarning();
   const o = getState().showOverlays;
-  renderFront(document.getElementById('front'), model, o);
-  renderSide(document.getElementById('side'), model, o);
-  renderPlan(document.getElementById('plan'), model, o);
-  render3d(document.getElementById('three'), model, o);
+  const frontEl = document.getElementById('front');
+  if (frontEl) {
+    renderFront(frontEl, model, o);
+  } else {
+    console.warn('Element #front not found. Skipping renderFront.');
+  }
+  const sideEl = document.getElementById('side');
+  if (sideEl) {
+    renderSide(sideEl, model, o);
+  } else {
+    console.warn('Element #side not found. Skipping renderSide.');
+  }
+  const planEl = document.getElementById('plan');
+  if (planEl) {
+    renderPlan(planEl, model, o);
+  } else {
+    console.warn('Element #plan not found. Skipping renderPlan.');
+  }
+  const threeEl = document.getElementById('three');
+  if (threeEl) {
+    render3d(threeEl, model, o);
+  } else {
+    console.warn('Element #three not found. Skipping render3d.');
+  }
 
   const vm = getState().viewMode;
   document.body.classList.toggle('single', vm !== 'quad');
-  document.querySelectorAll('#views canvas').forEach(c=>{
-    c.classList.toggle('active', vm === 'quad' ? true : c.id === vm);
-  });
+  const canvases = document.querySelectorAll('#views canvas');
+  if (canvases.length === 0) {
+    console.warn('No canvases found under #views.');
+  } else {
+    canvases.forEach(c=>{
+      c.classList.toggle('active', vm === 'quad' ? true : c.id === vm);
+    });
+  }
 }
 
 function init() {
   const s = getState();
-  document.getElementById('height-input').value = s.height;
-  document.getElementById('depth-input').value = s.depth;
-  document.getElementById('post-input').value = s.post;
-  document.getElementById('pattern-input').value = s.patternText;
-  document.getElementById('rearFrame-toggle').checked = s.rearFrame;
-  document.getElementById('showBins-toggle').checked = s.showBins;
-  document.getElementById('overlay-toggle').checked = s.showOverlays;
+  const heightInput = document.getElementById('height-input');
+  if (heightInput) {
+    heightInput.value = s.height;
+    heightInput.addEventListener('input', e=>setHeight(e.target.value));
+  } else {
+    console.warn('#height-input not found. Skipping height input setup.');
+  }
 
-  document.getElementById('height-input').addEventListener('input', e=>setHeight(e.target.value));
-  document.getElementById('depth-input').addEventListener('input', e=>setDepth(e.target.value));
-  document.getElementById('post-input').addEventListener('input', e=>setPost(e.target.value));
-  document.getElementById('pattern-input').addEventListener('input', e=>setPatternText(e.target.value));
-  document.getElementById('rearFrame-toggle').addEventListener('change', e=>toggleRearFrame(e.target.checked));
-  document.getElementById('showBins-toggle').addEventListener('change', e=>toggleShowBins(e.target.checked));
-  document.getElementById('overlay-toggle').addEventListener('change', e=>toggleOverlays(e.target.checked));
+  const depthInput = document.getElementById('depth-input');
+  if (depthInput) {
+    depthInput.value = s.depth;
+    depthInput.addEventListener('input', e=>setDepth(e.target.value));
+  } else {
+    console.warn('#depth-input not found. Skipping depth input setup.');
+  }
 
-  document.querySelectorAll('#view-controls button').forEach(btn=>{
-    btn.addEventListener('click', ()=>setViewMode(btn.dataset.view));
-  });
+  const postInput = document.getElementById('post-input');
+  if (postInput) {
+    postInput.value = s.post;
+    postInput.addEventListener('input', e=>setPost(e.target.value));
+  } else {
+    console.warn('#post-input not found. Skipping post input setup.');
+  }
 
-  document.querySelectorAll('#views canvas').forEach(cvs=>{
-    cvs.addEventListener('click', ()=>{
-      const vm = getState().viewMode;
-      setViewMode(vm === 'quad' ? cvs.id : 'quad');
+  const patternInput = document.getElementById('pattern-input');
+  if (patternInput) {
+    patternInput.value = s.patternText;
+    patternInput.addEventListener('input', e=>setPatternText(e.target.value));
+  } else {
+    console.warn('#pattern-input not found. Skipping pattern input setup.');
+  }
+
+  const rearFrameToggle = document.getElementById('rearFrame-toggle');
+  if (rearFrameToggle) {
+    rearFrameToggle.checked = s.rearFrame;
+    rearFrameToggle.addEventListener('change', e=>toggleRearFrame(e.target.checked));
+  } else {
+    console.warn('#rearFrame-toggle not found. Skipping rear frame toggle setup.');
+  }
+
+  const showBinsToggle = document.getElementById('showBins-toggle');
+  if (showBinsToggle) {
+    showBinsToggle.checked = s.showBins;
+    showBinsToggle.addEventListener('change', e=>toggleShowBins(e.target.checked));
+  } else {
+    console.warn('#showBins-toggle not found. Skipping show bins toggle setup.');
+  }
+
+  const overlayToggle = document.getElementById('overlay-toggle');
+  if (overlayToggle) {
+    overlayToggle.checked = s.showOverlays;
+    overlayToggle.addEventListener('change', e=>toggleOverlays(e.target.checked));
+  } else {
+    console.warn('#overlay-toggle not found. Skipping overlay toggle setup.');
+  }
+
+  const viewButtons = document.querySelectorAll('#view-controls button');
+  if (viewButtons.length === 0) {
+    console.warn('No buttons found under #view-controls.');
+  } else {
+    viewButtons.forEach(btn=>{
+      btn.addEventListener('click', ()=>setViewMode(btn.dataset.view));
     });
-  });
+  }
 
-  init3dControls(document.getElementById('three'));
+  const canvases = document.querySelectorAll('#views canvas');
+  if (canvases.length === 0) {
+    console.warn('No canvases found under #views.');
+  } else {
+    canvases.forEach(cvs=>{
+      cvs.addEventListener('click', ()=>{
+        const vm = getState().viewMode;
+        setViewMode(vm === 'quad' ? cvs.id : 'quad');
+      });
+    });
+  }
+
+  const threeEl = document.getElementById('three');
+  if (threeEl) {
+    init3dControls(threeEl);
+  } else {
+    console.warn('Element #three not found. Skipping 3D controls initialization.');
+  }
 
   subscribe(render);
   render();
