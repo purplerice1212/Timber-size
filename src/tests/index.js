@@ -6,6 +6,7 @@ import {testExtraSupport} from './supports.js';
 import {testMM} from './mm.js';
 import {testLevels} from './levels.js';
 import {testPinchZoom} from './pinch-zoom.js';
+import {testBinSlack} from './bin-slack.js';
 import {fileURLToPath} from 'url';
 
 export function runTests(){
@@ -17,7 +18,8 @@ export function runTests(){
     ...testExtraSupport(),
     ...testMM(),
     ...testLevels(),
-    ...testPinchZoom()
+    ...testPinchZoom(),
+    ...testBinSlack()
   ];
   if (typeof console !== 'undefined' && console.table) console.table(results);
   return results;
