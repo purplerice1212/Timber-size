@@ -409,8 +409,9 @@ function buildModel(){
       if(allowBottom) xs.forEach(bx => M.boxes.push({type:'rail',x:bx,y,z:0,w:P,h:P,d:R}));
       if(S.showBins && allowBottom){
         const row=S.rows[idx]||{};
-        const bodyW=Math.min(mm(S.binBody), c.w-2);
-        const overall= bodyW + 2*mm(S.binFlange);
+        const slack = mm(S.binSlack);
+        const bodyW=Math.min(mm(S.binBody), Math.max(0, c.w-2-slack));
+        const overall= bodyW + 2*mm(S.binFlange) + slack;
         const bx=c.x + (c.w - overall)/2;
         const lip=mm(S.binLip);
         const binH=mm(row.height ?? S.binHeightDefault);
