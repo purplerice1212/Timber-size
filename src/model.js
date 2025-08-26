@@ -1,13 +1,83 @@
+import {mm} from './utils/mm.js';
+import {clamp} from './utils/math.js';
+import {segments} from './utils/segments.js';
+import {channels} from './utils/channels.js';
+import {computeLevels} from './utils/computeLevels.js';
+import {railXPositions} from './utils/railXPositions.js';
+import {autoHeightFromRows} from './utils/autoHeight.js';
+
 export function buildModel(S) {
-  const boxes = [];
-  const {width, height, depth, post} = S;
-  // Four corner posts
-  boxes.push({x:0, y:0, z:0, w:post, h:height, d:post});
-  boxes.push({x:width-post, y:0, z:0, w:post, h:height, d:post});
-  boxes.push({x:0, y:0, z:depth-post, w:post, h:height, d:post});
-  boxes.push({x:width-post, y:0, z:depth-post, w:post, h:height, d:post});
-  return {
-    boxes,
-    bounds: {width, height, depth}
+  const P = S.post;
+  const ch = channels(S);
+  const {levels:L, rowOverflow} = computeLevels(S);
+  const seg = segments(S);
+  const W = seg.reduce((a,b)=>a+b,0);
+  const H = S.autoHeight ? autoHeightFromRows(S) : S.height;
+  const D = S.depth;
+  const R = Math.min(S.runnerDepth, S.depth);
+  const M = {W,H,D,P,channels:ch,levels:L,rowOverflow,boxes:[]};
+
+  // Posts (front)
+  let x=0; for(const s of seg){ if(s===P) M.boxes.push({type:'post',x,y:0,z:0,w:P,h:H,d:P}); x+=s; }
+  // Posts (rear)
+  if(S.rearFrame){ let xb=0; for(const s of seg){ if(s===P) M.boxes.push({type:'post',x:xb,y:0,z:D-P,w:P,h:H,d:P}); xb+=s; } }
+
+  // Lintels
+  M.boxes.push({type:'lintel',x:0,y:0,z:0,w:W,h:P,d:P});
+  M.boxes.push({type:'lintel',x:0,y:H-P,z:0,w:W,h:P,d:P});
+  if(S.rearFrame){
+    M.boxes.push({type:'lintel',x:0,y:0,z:D-P,w:W,h:P,d:P});
+    M.boxes.push({type:'lintel',x:0,y:H-P,z:D-P,w:W,h:P,d:P});
+  }
+
+  // Supports
+  const addSupport=(where)=>{
+    const on = where==='top'? S.topSupport : S.bottomSupport; if(!on) return;
+    const orient= where==='top'? S.topOrient : S.bottomOrient;
+    const size  = where==='top'? mm(S.topSize) : mm(S.bottomSize);
+    const yPos  = where==='top' ? clamp(P + mm(S.topDrop), P, H-2*P)
+                                 : clamp(H - 2*P - mm(S.bottomLift), P, H-2*P);
+    if(orient==='X'){
+      const zMid=(D-size)/2; M.boxes.push({type:'support',x:0,y:yPos,z:zMid,w:W,h:P,d:size});
+    }else{
+      const xMid=(W-size)/2; M.boxes.push({type:'support',x:xMid,y:yPos,z:0,w:size,h:P,d:D-P});
+    }
   };
+  addSupport('top'); addSupport('bottom'); if(S.extraBottomBeam) addSupport('bottom');
+
+  // Rails and bins
+  ch.forEach((c)=>{
+    const xs=railXPositions(c,S);
+    L.forEach((y,idx)=>{
+      const allowBottom = (idx!==0 || S.bottomRowRails);
+      if(allowBottom) xs.forEach(bx => M.boxes.push({type:'rail',x:bx,y,z:0,w:P,h:P,d:R}));
+      if(S.showBins && allowBottom){
+        const row=S.rows[idx]||{};
+        const bodyW=Math.min(mm(S.binBody), c.w-2);
+        const overall= bodyW + 2*mm(S.binFlange);
+        const bx=c.x + (c.w - overall)/2;
+        const lip=mm(S.binLip);
+        const binH=mm(row.height ?? S.binHeightDefault);
+        const over=mm(row.overhang ?? 0);
+        const gap=mm(row.gap ?? 0);
+        const dHere= Math.min(D + Math.max(0,over), D + over);
+        const yTop = Math.max(0, y + P - lip);
+        M.boxes.push({type:'bin',x:bx,y:yTop,z:0,w:overall,h:binH,d:dHere,gap});
+      }
+    });
+  });
+
+  // Bounds
+  const bMin=[Infinity,Infinity,Infinity];
+  const bMax=[-Infinity,-Infinity,-Infinity];
+  M.boxes.forEach(b=>{
+    bMin[0]=Math.min(bMin[0], b.x);
+    bMin[1]=Math.min(bMin[1], b.y);
+    bMin[2]=Math.min(bMin[2], b.z);
+    bMax[0]=Math.max(bMax[0], b.x + b.w);
+    bMax[1]=Math.max(bMax[1], b.y + b.h);
+    bMax[2]=Math.max(bMax[2], b.z + b.d);
+  });
+  M.bounds = {min:bMin, max:bMax};
+  return M;
 }
