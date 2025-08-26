@@ -1,4 +1,4 @@
-export const S = {
+const state = {
   height: 926,
   autoHeight: true,
   depth: 420,
@@ -32,3 +32,49 @@ export const S = {
   binHeightDefault:95,
   showBins:true
 };
+
+const listeners = new Set();
+
+function notify(){
+  for(const fn of listeners) fn(state);
+}
+
+export function getState(){
+  return state;
+}
+
+export function subscribe(fn){
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+export function setHeight(value){
+  state.height = Number(value);
+  state.autoHeight = false;
+  notify();
+}
+
+export function setDepth(value){
+  state.depth = Number(value);
+  notify();
+}
+
+export function setPost(value){
+  state.post = Number(value);
+  notify();
+}
+
+export function setPatternText(value){
+  state.patternText = value;
+  notify();
+}
+
+export function toggleRearFrame(value){
+  state.rearFrame = value;
+  notify();
+}
+
+export function toggleShowBins(value){
+  state.showBins = value;
+  notify();
+}
