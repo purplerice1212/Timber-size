@@ -14,3 +14,24 @@ export function drawPolygon(ctx, points, color = '#fff') {
   ctx.closePath();
   ctx.stroke();
 }
+
+export function drawLabel(ctx, x, y, text, color = '#fff') {
+  ctx.save();
+  ctx.scale(1, -1);
+  ctx.fillStyle = color;
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, -y);
+  ctx.restore();
+}
+
+export function drawCross(ctx, x, y, w, h, color = '#fff') {
+  ctx.strokeStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + w, y + h);
+  ctx.moveTo(x + w, y);
+  ctx.lineTo(x, y + h);
+  ctx.stroke();
+}
