@@ -64,3 +64,7 @@ Timber-size is a single-file HTML tool for planning timber storage layouts. It g
 | L-013 | View switching | viewMode ∈ {quad,3d,plan,front,side}; no rebuild | Toolbar |
 | L-014 | Cut List | From M (counts, railLen = min(runnerDepth, depth)) | Panel |
 
+## Packaging
+
+Run `npm run pack` to create a self-contained build. It bundles the app and writes the output to `dist/app.single.html`.
+
