@@ -5,10 +5,20 @@ import {testStateSetters} from './state-setters.js';
 import {testExtraSupport} from './supports.js';
 import {testMM} from './mm.js';
 import {testLevels} from './levels.js';
+import {testPinchZoom} from './pinch-zoom.js';
 import {fileURLToPath} from 'url';
 
 export function runTests(){
-  const results = [...testParser(), ...testClamp(), ...testCounts(), ...testStateSetters(), ...testExtraSupport(), ...testMM(), ...testLevels()];
+  const results = [
+    ...testParser(),
+    ...testClamp(),
+    ...testCounts(),
+    ...testStateSetters(),
+    ...testExtraSupport(),
+    ...testMM(),
+    ...testLevels(),
+    ...testPinchZoom()
+  ];
   if (typeof console !== 'undefined' && console.table) console.table(results);
   return results;
 }

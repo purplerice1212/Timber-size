@@ -125,7 +125,7 @@ export function init3dControls(canvas){
     }else if(pointers.size===2){
       const [p1,p2]=Array.from(pointers.values());
       const d=dist(p1,p2);
-      camState.zoom=clamp(pinchZoom*(pinchDist/d),0.5,3);
+      camState.zoom=clamp(pinchZoom*(d/pinchDist),0.5,3);
       setCamera(camState,false);
       render3d(canvasRef, modelRef, overlayRef);
     }
