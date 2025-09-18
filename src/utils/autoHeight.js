@@ -1,9 +1,18 @@
 import {mm} from './mm.js';
+import {computeLevels} from './computeLevels.js';
 
-export function autoHeightFromRows(S){
+export function autoHeightFromRows(S, shared){
+  const computed = shared ?? computeLevels(S);
+  const rows = computed.rows ?? [];
+  let heights = 0;
+  let gaps = 0;
+  for(const row of rows){
+    heights += row.heightMm ?? 0;
+    gaps += row.gapMm ?? 0;
+  }
   const P = S.post;
-  const lintels = P * (S.rows.length + 1);
-  const heights = S.rows.reduce((a,r)=>a + mm(r.height),0);
-  const gaps = S.rows.reduce((a,r)=>a + mm(r.gap),0);
-  return lintels + mm(S.bottomClear) + mm(S.topClear) + heights + gaps;
+  const lintels = P * ((rows.length || S.rows.length) + 1);
+  const bottomClear = computed.bottomClearMm ?? mm(S.bottomClear);
+  const topClear = mm(S.topClear);
+  return lintels + bottomClear + topClear + heights + gaps;
 }
