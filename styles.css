@@ -42,6 +42,50 @@ body {
   min-height: 0;
 }
 
+.hud {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.3rem;
+  pointer-events: none;
+}
+
+.fit {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 12px;
+  padding: 0.24rem 0.5rem;
+  border: none;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.fit:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+.legend {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 11px;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.3rem;
+  max-width: min(260px, 80%);
+  pointer-events: none;
+}
+
 .panel {
   background: #f7f7f8;
   color: #111;
