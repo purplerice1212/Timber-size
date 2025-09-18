@@ -64,7 +64,7 @@ export function buildModel(S) {
         const binH=mm(row.height ?? S.binHeightDefault);
         const over=mm(row.overhang ?? 0);
         const gap=mm(row.gap ?? 0);
-        const dHere = Math.max(0, D + over);
+        const dHere = Math.max(0, D + over); // prevent negative bin depth
         const yTop = Math.max(0, y + P - lip);
         M.boxes.push({type:'bin',x:bx,y:yTop,z:0,w:overall,h:binH,d:dHere,gap});
       }
