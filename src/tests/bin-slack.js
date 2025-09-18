@@ -23,8 +23,8 @@ export function testBinSlack(){
     const rows = getState().rows.map(r=>({...r, overhang:-1000}));
     const S = {...getState(), rows};
     const M = buildModel(S);
-    const bin = M.boxes.find(b=>b.type==='bin');
-    const pass = bin.d === 0;
+    const bins = M.boxes.filter(b=>b.type==='bin');
+    const pass = bins.length > 0 && bins.every(b=>b.d === 0);
     results.push({name:'bin depth not negative with large negative overhang', pass});
   }
 
