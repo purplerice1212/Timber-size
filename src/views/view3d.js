@@ -98,10 +98,16 @@ export function init3dControls(canvas){
   let pinchDist=0,pinchZoom=1;
   const pos=e=>({x:e.clientX,y:e.clientY});
   const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-  const end=e=>{pointers.delete(e.pointerId); if(pointers.size<2) pinchDist=0;};
-  canvas.addEventListener('pointerup',end);
-  canvas.addEventListener('pointerleave',end);
-  canvas.addEventListener('pointercancel',end);
+  const end=e=>{
+    if(canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)){
+      canvas.releasePointerCapture(e.pointerId);
+    }
+    pointers.delete(e.pointerId);
+    if(pointers.size<2) pinchDist=0;
+  };
+  ['pointerup','pointerleave','pointercancel'].forEach(type=>{
+    canvas.addEventListener(type,end);
+  });
   canvas.addEventListener('pointerdown',e=>{
     pointers.set(e.pointerId,pos(e));
     if(pointers.size===2){
