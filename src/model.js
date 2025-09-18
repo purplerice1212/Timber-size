@@ -8,9 +8,9 @@ import {autoHeightFromRows} from './utils/autoHeight.js';
 
 export function buildModel(S) {
   const P = S.post;
-  const ch = channels(S);
-  const {levels:L, rowOverflow} = computeLevels(S);
   const seg = segments(S);
+  const ch = channels(S, seg);
+  const {levels:L, rowOverflow} = computeLevels(S);
   const W = seg.reduce((a,b)=>a+b,0);
   const H = S.autoHeight ? autoHeightFromRows(S) : S.height;
   const D = S.depth;
