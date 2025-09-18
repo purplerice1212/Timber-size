@@ -8,27 +8,41 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <form id="controls">
-      <label>Height <input id="height-input" type="number" /></label>
-      <label>Depth <input id="depth-input" type="number" /></label>
-      <label>Post <input id="post-input" type="number" /></label>
-      <label>Pattern <input id="pattern-input" type="text" /></label>
-      <label><input id="rearFrame-toggle" type="checkbox" /> Rear Frame</label>
-      <label><input id="showBins-toggle" type="checkbox" /> Show Bins</label>
-      <label><input id="overlay-toggle" type="checkbox" /> Overlays</label>
-    </form>
-    <div id="view-controls">
-      <button data-view="quad">Quad</button>
-      <button data-view="three">3D</button>
-      <button data-view="plan">Plan</button>
-      <button data-view="front">Front</button>
-      <button data-view="side">Side</button>
-    </div>
-    <div id="views">
-      <canvas id="front"></canvas>
-      <canvas id="side"></canvas>
-      <canvas id="plan"></canvas>
-      <canvas id="three"></canvas>
+    <div class="app">
+      <div class="views" id="views">
+        <div class="view" data-view="front">
+          <canvas id="front"></canvas>
+        </div>
+        <div class="view" data-view="side">
+          <canvas id="side"></canvas>
+        </div>
+        <div class="view" data-view="plan">
+          <canvas id="plan"></canvas>
+        </div>
+        <div class="view" data-view="three">
+          <canvas id="three"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <div id="view-controls">
+          <button data-view="quad">Quad</button>
+          <button data-view="three">3D</button>
+          <button data-view="plan">Plan</button>
+          <button data-view="front">Front</button>
+          <button data-view="side">Side</button>
+        </div>
+        <div id="controlsRoot">
+          <form id="controls">
+            <label>Height <input id="height-input" type="number" /></label>
+            <label>Depth <input id="depth-input" type="number" /></label>
+            <label>Post <input id="post-input" type="number" /></label>
+            <label>Pattern <input id="pattern-input" type="text" /></label>
+            <label><input id="rearFrame-toggle" type="checkbox" /> Rear Frame</label>
+            <label><input id="showBins-toggle" type="checkbox" /> Show Bins</label>
+            <label><input id="overlay-toggle" type="checkbox" /> Overlays</label>
+          </form>
+        </div>
+      </div>
     </div>
 
     <script type="module" src="./src/main.js"></script>

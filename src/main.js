@@ -73,13 +73,24 @@ function render(){
 
   const vm = getState().viewMode;
   document.body.classList.toggle('single', vm !== 'quad');
-  const canvases = document.querySelectorAll('#views canvas');
-  if (canvases.length === 0) {
-    console.warn('No canvases found under #views.');
+  const viewsRoot = document.getElementById('views');
+  if (!viewsRoot) {
+    console.warn('Element #views not found. Skipping view visibility updates.');
   } else {
-    canvases.forEach(c=>{
-      c.classList.toggle('active', vm === 'quad' ? true : c.id === vm);
-    });
+    const viewPanels = viewsRoot.querySelectorAll('.view');
+    if (viewPanels.length === 0) {
+      console.warn('No .view containers found under #views.');
+    } else {
+      viewPanels.forEach(panel=>{
+        const canvas = panel.querySelector('canvas');
+        const panelView = panel.dataset.view || (canvas && canvas.id);
+        const isActive = vm === 'quad' ? true : panelView === vm;
+        panel.classList.toggle('active', Boolean(isActive));
+        if (canvas) {
+          canvas.classList.toggle('active', Boolean(isActive));
+        }
+      });
+    }
   }
 }
 
@@ -150,16 +161,21 @@ function init() {
     });
   }
 
-  const canvases = document.querySelectorAll('#views canvas');
-  if (canvases.length === 0) {
-    console.warn('No canvases found under #views.');
+  const viewsRoot = document.getElementById('views');
+  if (!viewsRoot) {
+    console.warn('Element #views not found. Skipping canvas event binding.');
   } else {
-    canvases.forEach(cvs=>{
-      cvs.addEventListener('click', ()=>{
-        const vm = getState().viewMode;
-        setViewMode(vm === 'quad' ? cvs.id : 'quad');
+    const canvases = viewsRoot.querySelectorAll('canvas');
+    if (canvases.length === 0) {
+      console.warn('No canvases found under #views.');
+    } else {
+      canvases.forEach(cvs=>{
+        cvs.addEventListener('click', ()=>{
+          const vm = getState().viewMode;
+          setViewMode(vm === 'quad' ? cvs.id : 'quad');
+        });
       });
-    });
+    }
   }
 
   const threeEl = document.getElementById('three');
