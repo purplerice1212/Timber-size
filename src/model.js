@@ -10,9 +10,10 @@ export function buildModel(S) {
   const P = S.post;
   const seg = segments(S);
   const ch = channels(S, seg);
-  const {levels:L, rowOverflow} = computeLevels(S);
+  const levelData = computeLevels(S);
+  const {levels:L, rowOverflow} = levelData;
   const W = seg.reduce((a,b)=>a+b,0);
-  const H = S.autoHeight ? autoHeightFromRows(S) : S.height;
+  const H = S.autoHeight ? autoHeightFromRows(S, levelData) : S.height;
   const D = S.depth;
   const R = Math.min(S.runnerDepth, S.depth);
   const M = {W,H,D,P,channels:ch,levels:L,rowOverflow,boxes:[]};

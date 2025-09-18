@@ -3,17 +3,31 @@ import {clamp} from './math.js';
 
 export function computeLevels(S){
   const P = S.post;
-  let y = P + mm(S.bottomClear);
-  const out = [];
+  const bottomClearMm = mm(S.bottomClear);
+  let y = P + bottomClearMm;
+  const maxLevel = (S.autoHeight ? 1e9 : S.height) - P;
+  const levels = [];
+  const rows = [];
   let overflow = false;
-  for(const r of S.rows){
-    const h = mm(r.height);
-    if(!S.autoHeight && (y > S.height - P || y + h > S.height - P)){
+
+  for (const r of S.rows){
+    const heightMm = mm(r.height);
+    const gapMm = mm(r.gap);
+    const rowInfo = {heightMm, gapMm};
+
+    if(!overflow && !S.autoHeight && (y > S.height - P || y + heightMm > S.height - P)){
       overflow = true;
-      break;
     }
-    out.push(clamp(y,0,(S.autoHeight?1e9:S.height)-P));
-    y += h + P + mm(r.gap);
+
+    if(!overflow){
+      const level = clamp(y, 0, maxLevel);
+      rowInfo.level = level;
+      levels.push(level);
+      y += heightMm + P + gapMm;
+    }
+
+    rows.push(rowInfo);
   }
-  return {levels:out, rowOverflow:overflow};
+
+  return {levels, rowOverflow:overflow, rows, bottomClearMm};
 }
