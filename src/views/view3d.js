@@ -2,7 +2,8 @@ import {typeColors} from '../utils/colors.js';
 import {getState, setCamera} from '../state.js';
 import {clamp} from '../utils/math.js';
 
-const camState = {yaw:0.5, pitch:0.3, zoom:1};
+const DEFAULT_CAMERA = {yaw:0.5, pitch:0.3, zoom:1};
+const camState = {...DEFAULT_CAMERA};
 let canvasRef, modelRef, overlayRef;
 
 function shadeColor(hex, factor){
@@ -83,11 +84,21 @@ export function render3d(canvas, model, overlays=false){
     ctx.fillText(`W:${Math.round(width)} H:${Math.round(height)} D:${Math.round(depth)}`,10,20);
   }
 }
+
+export function reset3dCamera({notify=false}={}){
+  camState.yaw=DEFAULT_CAMERA.yaw;
+  camState.pitch=DEFAULT_CAMERA.pitch;
+  camState.zoom=DEFAULT_CAMERA.zoom;
+  const hasContext=Boolean(canvasRef && modelRef);
+  const shouldNotify=notify || !hasContext;
+  setCamera(camState, shouldNotify);
+  if(hasContext){
+    render3d(canvasRef, modelRef, overlayRef);
+  }
+}
 export function init3dControls(canvas){
   canvas.addEventListener('dblclick',()=>{
-    camState.yaw=0.5; camState.pitch=0.3; camState.zoom=1;
-    setCamera(camState,false);
-    render3d(canvasRef, modelRef, overlayRef);
+    reset3dCamera();
   });
   canvas.addEventListener('wheel',e=>{
     camState.zoom=clamp(camState.zoom+(e.deltaY>0?0.1:-0.1),0.5,3);

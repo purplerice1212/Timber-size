@@ -14,7 +14,7 @@ import {buildModel} from './model.js';
 import {renderFront} from './views/front.js';
 import {renderSide} from './views/side.js';
 import {renderPlan} from './views/plan.js';
-import {render3d, init3dControls} from './views/view3d.js';
+import {render3d, init3dControls, reset3dCamera} from './views/view3d.js';
 
 function showRowOverflowWarning(){
   let banner=document.getElementById('rowoverflow-warning');
@@ -183,6 +183,15 @@ function init() {
     init3dControls(threeEl);
   } else {
     console.warn('Element #three not found. Skipping 3D controls initialization.');
+  }
+
+  const fitThreeBtn = document.getElementById('fit-three');
+  if (fitThreeBtn) {
+    fitThreeBtn.addEventListener('click', ()=>{
+      reset3dCamera();
+    });
+  } else {
+    console.warn('#fit-three not found. Skipping 3D fit control binding.');
   }
 
   subscribe(render);
