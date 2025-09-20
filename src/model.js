@@ -61,7 +61,8 @@ export function buildModel(S) {
         const bodyW=Math.min(mm(S.binBody), Math.max(0, c.w-2-slack));
         const overall= bodyW + 2*mm(S.binFlange) + slack;
         const bx=c.x + (c.w - overall)/2;
-        const lip=mm(S.binLip);
+        const lipSource = S.binLipThick != null ? S.binLipThick : S.binLip;
+        const lip=mm(lipSource);
         const binH=mm(row.height ?? S.binHeightDefault);
         const over=mm(row.overhang ?? 0);
         const gap=mm(row.gap ?? 0);

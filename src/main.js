@@ -5,6 +5,12 @@ import {
   setDepth,
   setPost,
   setPatternText,
+  setRowHeight,
+  addRow,
+  removeRow,
+  setBottomRowRails,
+  setRailMode,
+  setBinLipThickness,
   toggleRearFrame,
   toggleShowBins,
   toggleOverlays,
@@ -15,6 +21,7 @@ import {renderFront} from './views/front.js';
 import {renderSide} from './views/side.js';
 import {renderPlan} from './views/plan.js';
 import {render3d, init3dControls, reset3dCamera} from './views/view3d.js';
+import {segments as stateSegments} from './utils/segments.js';
 
 function showRowOverflowWarning(){
   let banner=document.getElementById('rowoverflow-warning');
@@ -63,6 +70,178 @@ function scheduleViewDrawing(callback){
       callback();
     },0);
     pendingDrawUsesTimeout=true;
+  }
+}
+
+const DEFAULT_COLUMN_WIDTH = 325;
+const DEFAULT_ROW_HEIGHT = 120;
+
+function getColumnWidthsFromState(state){
+  const seg = stateSegments(state);
+  const widths = [];
+  for(let i=1;i<seg.length;i+=2){
+    const width = Math.round(Number(seg[i]));
+    widths.push(Number.isFinite(width) && width>0 ? width : DEFAULT_COLUMN_WIDTH);
+  }
+  return widths.length ? widths : [DEFAULT_COLUMN_WIDTH];
+}
+
+function applyColumnWidths(widths){
+  const state = getState();
+  const sanitized = widths
+    .map(v=>Math.round(Number(v)))
+    .filter(v=>Number.isFinite(v) && v>0);
+  const values = sanitized.length ? sanitized : [DEFAULT_COLUMN_WIDTH];
+  const postRaw = Math.round(Number(state.post));
+  const post = Number.isFinite(postRaw) && postRaw>0 ? postRaw : 1;
+  const seg = [post];
+  values.forEach(w=>{
+    seg.push(w);
+    seg.push(post);
+  });
+  const nextPattern = seg.join(', ');
+  if(nextPattern === state.patternText) return;
+  setPatternText(nextPattern);
+}
+
+function renderColumnsUI(state){
+  const list = document.getElementById('columnsList');
+  if(!list) return;
+  list.innerHTML='';
+
+  const widths = getColumnWidthsFromState(state);
+  widths.forEach((w,i)=>{
+    const wrap=document.createElement('div');
+    wrap.className='row';
+    const value = Math.round(Number(w));
+    wrap.innerHTML=`
+      <div class="ctl" style="width:160px">
+        <span>Opening width (mm)</span>
+        <input type="number" min="1" step="1" value="${Number.isFinite(value) && value>0 ? value : DEFAULT_COLUMN_WIDTH}" data-col="${i}">
+      </div>`;
+    list.appendChild(wrap);
+  });
+
+  list.querySelectorAll('input[type="number"]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const idx=Number(inp.dataset.col);
+      if(!Number.isInteger(idx) || idx<0) return;
+      const val=Math.round(Number(inp.value));
+      if(!Number.isFinite(val) || val<=0) return;
+      const current=getColumnWidthsFromState(getState());
+      if(idx>=current.length) return;
+      if(current[idx]===val) return;
+      const next=current.slice();
+      next[idx]=val;
+      applyColumnWidths(next);
+    });
+  });
+
+  const add=document.getElementById('btnAddCol');
+  if(add) add.onclick=()=>{
+    const current=getColumnWidthsFromState(getState());
+    const rawLast=current[current.length-1];
+    const fallback=Number.isFinite(rawLast) && rawLast>0 ? rawLast : DEFAULT_COLUMN_WIDTH;
+    const next=current.slice();
+    next.push(Math.round(fallback));
+    applyColumnWidths(next);
+  };
+
+  const rm=document.getElementById('btnRemoveCol');
+  if(rm) rm.onclick=()=>{
+    const current=getColumnWidthsFromState(getState());
+    if(current.length<=1) return;
+    applyColumnWidths(current.slice(0,-1));
+  };
+}
+
+function renderRowsUI(state){
+  const list=document.getElementById('rowsList');
+  if(!list) return;
+  list.innerHTML='';
+
+  const rows=Array.isArray(state.rows)? state.rows : [];
+  rows.forEach((row,i)=>{
+    const value=Math.round(Number(row && row.height));
+    const safe=Number.isFinite(value) && value>0 ? value : DEFAULT_ROW_HEIGHT;
+    const wrap=document.createElement('div');
+    wrap.className='row';
+    wrap.innerHTML=`
+      <div class="ctl" style="width:160px">
+        <span>Row height (mm)</span>
+        <input type="number" min="1" step="1" value="${safe}" data-row="${i}">
+      </div>`;
+    list.appendChild(wrap);
+  });
+
+  list.querySelectorAll('input[type="number"]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const idx=Number(inp.dataset.row);
+      if(!Number.isInteger(idx) || idx<0) return;
+      const val=Math.round(Number(inp.value));
+      if(!Number.isFinite(val) || val<=0) return;
+      setRowHeight(idx, val);
+    });
+  });
+
+  const add=document.getElementById('btnAddRow');
+  if(add) add.onclick=()=>addRow();
+  const rm=document.getElementById('btnRemoveRow');
+  if(rm) rm.onclick=()=>removeRow();
+}
+
+function bindRailsAndBins(state){
+  const twoRails=document.getElementById('twoRails');
+  if(twoRails){
+    const mode=state.railMode;
+    const isDual=mode ? !(mode==='centered' || mode==='single' || mode==='center') : !!state.twoRailsPerOpening;
+    if(twoRails.checked !== isDual) twoRails.checked = isDual;
+    twoRails.onchange=()=>setRailMode(twoRails.checked ? 'dual' : 'single');
+  }
+
+  const brRails=document.getElementById('bottomRowRails');
+  if(brRails){
+    const checked=Boolean(state.bottomRowRails);
+    if(brRails.checked !== checked) brRails.checked = checked;
+    brRails.onchange=()=>setBottomRowRails(brRails.checked);
+  }
+
+  const showBinsCtl=document.getElementById('showBinsCtl');
+  if(showBinsCtl){
+    const show=Boolean(state.showBins);
+    if(showBinsCtl.checked !== show) showBinsCtl.checked = show;
+    showBinsCtl.onchange=()=>toggleShowBins(showBinsCtl.checked);
+  }
+
+  const lip=document.getElementById('binLipThick');
+  if(lip){
+    const lipValue = state.binLipThick != null ? state.binLipThick : state.binLip;
+    if(lipValue != null && lip.value !== String(lipValue)){
+      lip.value = lipValue;
+    }
+    lip.oninput=()=>{
+      const v=Number(lip.value);
+      if(!Number.isFinite(v) || v<0) return;
+      setBinLipThickness(v);
+    };
+  }
+}
+
+function updateAuxControls(state){
+  renderColumnsUI(state);
+  renderRowsUI(state);
+  bindRailsAndBins(state);
+
+  const patternInput=document.getElementById('pattern-input');
+  if(patternInput){
+    const text=state.patternText ?? '';
+    if(patternInput.value !== text) patternInput.value = text;
+  }
+
+  const legacyShowBins=document.getElementById('showBins-toggle');
+  if(legacyShowBins){
+    const checked=Boolean(state.showBins);
+    if(legacyShowBins.checked !== checked) legacyShowBins.checked = checked;
   }
 }
 
@@ -313,7 +492,9 @@ function init() {
     }
   }
 
+  subscribe(updateAuxControls);
   subscribe(render);
+  updateAuxControls(getState());
   render();
 }
 
