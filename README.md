@@ -74,3 +74,13 @@ Timber-size can be bundled into a standalone HTML file for easy sharing or offli
 
 The build step bundles the app (via `pack.mjs`, which targets `index.html`) and writes the output to `dist/app.single.html`, excluding the reference-only `fin2.html`.
 
+
+## Troubleshooting
+
+✅ 方法 1：修复 npm 文件夹权限（推荐）
+
+在终端运行：
+
+```bash
+sudo chown -R $(whoami) ~/.npm
+```
