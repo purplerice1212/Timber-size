@@ -11,6 +11,36 @@ Timber-size is a single-file HTML tool for planning timber storage layouts. It g
    - Command line: `npm test`
    - Browser console: call `runTests()`
 
+## Project Structure
+
+The project is split into small modules so you can jump from a UI element to the code that drives it:
+
+* **Entrypoint (`index.html`)** – Declares the layout and loads the JavaScript modules that wire up the toolbar, canvases, and cut-list panes. When you open the app in a browser this file bootstraps the rest of the system.
+* **Orchestrator (`src/main.js`)** – Subscribes to state updates, calls `buildModel` whenever inputs change, toggles view visibility, and dispatches the resulting geometry to each renderer.
+* **State store (`src/state.js`)** – Central source of truth for user inputs, derived options, and camera controls. View and input handlers mutate this store, which in turn triggers renders via the orchestrator.
+* **Geometry builder (`src/model.js`)** – Converts the current state into a reusable model object (channels, boxes, bounds, row overflow flags) consumed by every view and the cut-list logic.
+* **View modules (`src/views/`)** – `view3d.js`, `plan.js`, `front.js`, and `side.js` each read the shared model to draw their perspective of the shelving system, including overlay dimensions when enabled.
+* **Drawing & math helpers (`src/utils/`)** – Shared utilities for unit conversion, layout math, drawing 2D primitives, and fitting canvases, keeping the view renderers small and declarative.
+* **Styling (`styles.css`)** – Defines the responsive grid used by `index.html`, the `.single` layout used when a single view is active, and other responsive rules that control how large each canvas can grow.
+* **Build script (`pack.mjs`)** – Node-based bundler that inlines the modules above into `dist/app.single.html` for distribution.
+* **Test harness (`src/tests/index.js`)** – Contains the assertions run by both the browser `runTests()` helper and the command line `npm test` task.
+
+### Model data
+
+`buildModel(state)` returns a structured object with:
+
+* **`channels`** – Normalised opening spans (x offsets and widths) used by the plan view for overlay labels and by rail/bin placement.
+* **`boxes`** – The full list of boxes (posts, rails, lintels, bins, supports) shared by every renderer. `view3d.js` extrudes and shades these boxes for the 3D canvas, while the 2D renderers (`plan.js`, `front.js`, `side.js`) project them onto width/depth/height planes via the drawing helpers.
+* **`bounds`** – Axis-aligned min/max coordinates that allow the renderers to fit the model into their canvases and provide dimension overlays. The 3D renderer also centres the virtual camera on these bounds.
+* **`rowOverflow`** – Indicates when requested rows exceed the available height; `src/main.js` uses this flag to raise a banner while still rendering the clamped geometry.
+
+Responsive behaviour in `styles.css` governs how these renderers appear: switching between quad and single-view modes toggles CSS classes that resize the canvases, so `fitCanvas` in the view modules re-computes scaling factors on every render.
+
+### Automated workflows
+
+* `npm test` executes the assertions defined in `src/tests/index.js`, mirroring the browser-based `runTests()` entry point.
+* `npm run pack` invokes `pack.mjs`, which traverses `index.html` and bundles the modules above into a single distributable HTML file.
+
 ## Version Change Log
 
 | Ver | What it is | Key behavior | Problems seen (if any) | Notes |
