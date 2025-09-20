@@ -14,7 +14,7 @@ const state = {
   ],
   topClear:10,
   bottomClear:10,
-  bottomRowRails:false,
+  bottomRowRails:false, // default: no base rails (Trofast rule)
   railMode:'edges',
   twoRailsPerOpening:true,
   topSupport:true,

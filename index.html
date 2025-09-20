@@ -52,6 +52,44 @@
             <label><input id="rearFrame-toggle" type="checkbox" /> Rear Frame</label>
             <label><input id="showBins-toggle" type="checkbox" /> Show Bins</label>
             <label><input id="overlay-toggle" type="checkbox" /> Overlays</label>
+
+            <!-- MVP: Columns -->
+            <section class="grp" id="grp-columns">
+              <h2>Columns &amp; Openings</h2>
+              <div class="row">
+                <button id="btnAddCol" class="pill">+ Add Column</button>
+                <button id="btnRemoveCol" class="pill">− Remove Column</button>
+              </div>
+              <div id="columnsList" class="ctl" style="gap:.5rem"></div>
+              <p class="dim">Tip: columns edit writes back to <code>patternText</code>.</p>
+            </section>
+
+            <!-- MVP: Rows -->
+            <section class="grp" id="grp-rows">
+              <h2>Rows</h2>
+              <div class="row">
+                <button id="btnAddRow" class="pill">+ Add Row</button>
+                <button id="btnRemoveRow" class="pill">− Remove Row</button>
+              </div>
+              <div id="rowsList" class="ctl" style="gap:.5rem"></div>
+            </section>
+
+            <!-- MVP: Rails -->
+            <section class="grp" id="grp-rails">
+              <h2>Rails</h2>
+              <label class="l"><input type="checkbox" id="twoRails" /> Two rails per opening (L/R)</label>
+              <label class="l"><input type="checkbox" id="bottomRowRails" /> Bottom row rails</label>
+            </section>
+
+            <!-- MVP: Bins -->
+            <section class="grp" id="grp-bins">
+              <h2>Bins</h2>
+              <label class="l"><input type="checkbox" id="showBinsCtl" /> Show bins</label>
+              <div class="ctl" style="max-width:200px">
+                <span>Bin lip thickness (mm)</span>
+                <input type="number" id="binLipThick" min="0" step="0.1" />
+              </div>
+            </section>
           </form>
         </div>
         <div id="cutListPanel" hidden>
