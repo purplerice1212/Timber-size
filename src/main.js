@@ -185,11 +185,18 @@ function init() {
     console.warn('Element #three not found. Skipping 3D controls initialization.');
   }
 
-  const fitThreeButton = document.getElementById('fit-three');
-  if (fitThreeButton) {
-    fitThreeButton.addEventListener('click', () => reset3dCamera());
+  const fitThreeButtons = document.querySelectorAll('[data-fit="three"]');
+  if (fitThreeButtons.length > 0) {
+    fitThreeButtons.forEach(btn => {
+      btn.addEventListener('click', () => reset3dCamera());
+    });
   } else {
-    console.warn('#fit-three not found. Skipping 3D fit button wiring.');
+    const legacyFitButton = document.getElementById('fit-three');
+    if (legacyFitButton) {
+      legacyFitButton.addEventListener('click', () => reset3dCamera());
+    } else {
+      console.warn('No 3D fit view buttons found. Skipping 3D fit button wiring.');
+    }
   }
 
   subscribe(render);

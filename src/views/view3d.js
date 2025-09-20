@@ -6,6 +6,13 @@ const defaultCamera = {yaw:0.5, pitch:0.3, zoom:1};
 const camState = {...defaultCamera};
 let canvasRef, modelRef, overlayRef;
 
+function updateCameraState(notify){
+  setCamera({...camState}, notify);
+  if(!notify && canvasRef){
+    render3d(canvasRef, modelRef, overlayRef);
+  }
+}
+
 function shadeColor(hex, factor){
   const r=parseInt(hex.slice(1,3),16);
   const g=parseInt(hex.slice(3,5),16);
@@ -87,10 +94,7 @@ export function render3d(canvas, model, overlays=false){
 
 export function reset3dCamera({notify=true}={}){
   Object.assign(camState, defaultCamera);
-  setCamera({...camState}, notify);
-  if(!notify && canvasRef){
-    render3d(canvasRef, modelRef, overlayRef);
-  }
+  updateCameraState(notify);
 }
 export function init3dControls(canvas){
   canvas.addEventListener('dblclick',()=>{
@@ -98,8 +102,7 @@ export function init3dControls(canvas){
   });
   canvas.addEventListener('wheel',e=>{
     camState.zoom=clamp(camState.zoom+(e.deltaY>0?0.1:-0.1),0.5,3);
-    setCamera(camState,false);
-    render3d(canvasRef, modelRef, overlayRef);
+    updateCameraState(false);
   },{passive:true});
   const pointers=new Map();
   let pinchDist=0,pinchZoom=1;
@@ -131,14 +134,12 @@ export function init3dControls(canvas){
       const dx=curr.x-prev.x, dy=curr.y-prev.y;
       camState.yaw+=dx*0.01;
       camState.pitch=clamp(camState.pitch+dy*0.01,-1.1,1.1);
-      setCamera(camState,false);
-      render3d(canvasRef, modelRef, overlayRef);
+      updateCameraState(false);
     }else if(pointers.size===2){
       const [p1,p2]=Array.from(pointers.values());
       const d=dist(p1,p2);
       camState.zoom=clamp(pinchZoom*(d/pinchDist),0.5,3);
-      setCamera(camState,false);
-      render3d(canvasRef, modelRef, overlayRef);
+      updateCameraState(false);
     }
   });
 }

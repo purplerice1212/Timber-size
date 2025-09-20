@@ -84,6 +84,7 @@ body {
   border-radius: 0.3rem;
   max-width: min(260px, 80%);
   pointer-events: none;
+  line-height: 1.4;
 }
 
 .panel {
