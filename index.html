@@ -33,12 +33,15 @@
         </div>
       </div>
       <div class="panel">
-        <div id="view-controls">
-          <button data-view="quad">Quad</button>
-          <button data-view="three">3D</button>
-          <button data-view="plan">Plan</button>
-          <button data-view="front">Front</button>
-          <button data-view="side">Side</button>
+        <div class="toolbar">
+          <span>View:</span>
+          <button class="seg" type="button" data-view="quad">Quad</button>
+          <button class="seg" type="button" data-view="three">3D</button>
+          <button class="seg" type="button" data-view="plan">Plan</button>
+          <button class="seg" type="button" data-view="front">Front</button>
+          <button class="seg" type="button" data-view="side">Side</button>
+          <button class="pill" type="button" id="toggleQuad3D">Quad ⇄ 3D</button>
+          <button class="pill" type="button" id="toggleCutList">Cut List</button>
         </div>
         <div id="controlsRoot">
           <form id="controls">
@@ -50,6 +53,13 @@
             <label><input id="showBins-toggle" type="checkbox" /> Show Bins</label>
             <label><input id="overlay-toggle" type="checkbox" /> Overlays</label>
           </form>
+        </div>
+        <div id="cutListPanel" hidden>
+          <div class="cut-list-header">
+            <h2>Cut List</h2>
+            <button class="pill" type="button" id="closeCutList">Close</button>
+          </div>
+          <p id="cutListPlaceholder">Cut list details will appear here.</p>
         </div>
       </div>
     </div>

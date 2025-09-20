@@ -92,6 +92,19 @@ function render(){
       });
     }
   }
+
+  const viewButtons = document.querySelectorAll('.toolbar .seg[data-view]');
+  viewButtons.forEach(btn=>{
+    const isActive = btn.dataset.view === vm;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+  });
+
+  const toggleQuad3DButton = document.getElementById('toggleQuad3D');
+  if (toggleQuad3DButton) {
+    const isThreeDee = vm === 'three';
+    toggleQuad3DButton.setAttribute('aria-pressed', String(isThreeDee));
+  }
 }
 
 function init() {
@@ -152,13 +165,63 @@ function init() {
     console.warn('#overlay-toggle not found. Skipping overlay toggle setup.');
   }
 
-  const viewButtons = document.querySelectorAll('#view-controls button');
+  const viewButtons = document.querySelectorAll('.toolbar .seg[data-view]');
   if (viewButtons.length === 0) {
-    console.warn('No buttons found under #view-controls.');
+    console.warn('No segmented view buttons found.');
   } else {
     viewButtons.forEach(btn=>{
       btn.addEventListener('click', ()=>setViewMode(btn.dataset.view));
     });
+  }
+
+  const toggleQuad3DButton = document.getElementById('toggleQuad3D');
+  if (toggleQuad3DButton) {
+    toggleQuad3DButton.addEventListener('click', ()=>{
+      const vm = getState().viewMode;
+      setViewMode(vm === 'three' ? 'quad' : 'three');
+    });
+  } else {
+    console.warn('#toggleQuad3D not found. Skipping Quad ⇄ 3D toggle setup.');
+  }
+
+  const cutListPanel = document.getElementById('cutListPanel');
+  const toggleCutListButton = document.getElementById('toggleCutList');
+  const closeCutListButton = document.getElementById('closeCutList');
+
+  const setCutListOpen = open=>{
+    if (!cutListPanel) {
+      console.warn('#cutListPanel not found. Cannot toggle cut list panel.');
+      return;
+    }
+    if (open) {
+      cutListPanel.removeAttribute('hidden');
+    } else {
+      cutListPanel.setAttribute('hidden', '');
+    }
+    if (toggleCutListButton) {
+      toggleCutListButton.setAttribute('aria-expanded', String(open));
+    }
+  };
+
+  if (toggleCutListButton) {
+    const isOpen = Boolean(cutListPanel && !cutListPanel.hasAttribute('hidden'));
+    toggleCutListButton.setAttribute('aria-expanded', String(isOpen));
+    toggleCutListButton.addEventListener('click', ()=>{
+      if (!cutListPanel) {
+        console.warn('#cutListPanel not found. Cannot toggle cut list panel.');
+        return;
+      }
+      const shouldOpen = cutListPanel.hasAttribute('hidden');
+      setCutListOpen(shouldOpen);
+    });
+  } else {
+    console.warn('#toggleCutList not found. Skipping cut list toggle setup.');
+  }
+
+  if (closeCutListButton) {
+    closeCutListButton.addEventListener('click', ()=>setCutListOpen(false));
+  } else if (cutListPanel) {
+    console.warn('#closeCutList not found. Cut list panel can only be toggled via main button.');
   }
 
   const viewsRoot = document.getElementById('views');
