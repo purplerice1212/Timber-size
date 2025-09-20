@@ -222,3 +222,11 @@ body.single #views .view.active {
   display: block;
 }
 
+
+/* === MVP utility styles (safe to append at EOF) === */
+.grp { margin: 1rem 0; }
+.row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+.ctl { display:flex; flex-direction:column; gap:.25rem; }
+.l { display:flex; align-items:center; gap:.4rem; }
+.pill { border:1px solid #bbb; padding:.35rem .6rem; border-radius:.4rem; background:#fff; cursor:pointer; }
+.dim { color:#666; font-size:12px; }
