@@ -10,6 +10,17 @@
   <body>
     <div class="app">
       <div class="views" id="views">
+        <div class="view" data-view="three">
+          <div class="hud">3D</div>
+          <button class="fit" id="fit-three" data-fit="three" type="button">Fit view</button>
+          <canvas id="three"></canvas>
+          <div class="legend">Posts: pink · Lintels: gray · Rails: blue · Supports: orange · Bins: red</div>
+        </div>
+        <div class="view" data-view="plan">
+          <div class="hud">TOP / Plan (X×Z)</div>
+          <canvas id="plan"></canvas>
+          <div class="legend">Openings &amp; rail footprints</div>
+        </div>
         <div class="view" data-view="front">
           <div class="hud">FRONT / Elevation (X×Y)</div>
           <canvas id="front"></canvas>
@@ -19,17 +30,6 @@
           <div class="hud">SIDE / Elevation (Z×Y)</div>
           <canvas id="side"></canvas>
           <div class="legend">Depth &amp; rail length</div>
-        </div>
-        <div class="view" data-view="plan">
-          <div class="hud">TOP / Plan (X×Z)</div>
-          <canvas id="plan"></canvas>
-          <div class="legend">Openings &amp; rail footprints</div>
-        </div>
-        <div class="view" data-view="three">
-          <div class="hud">3D</div>
-          <button class="fit" id="fit-three" type="button">Fit view</button>
-          <canvas id="three"></canvas>
-          <div class="legend">Posts: pink · Lintels: gray · Rails: blue · Supports: orange · Bins: red</div>
         </div>
       </div>
       <div class="panel">
