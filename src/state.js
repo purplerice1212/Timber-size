@@ -14,7 +14,7 @@ const state = {
   ],
   topClear:10,
   bottomClear:10,
-  bottomRowRails:false,
+  bottomRowRails:false, // default: no base rails (Trofast rule)
   railMode:'edges',
   topSupport:true,
   topOrient:'X',
@@ -30,6 +30,7 @@ const state = {
   binBody:283,
   binFlange:9.5,
   binLip:9,
+  binLipThick:3, // mm; affects rail-to-bin lip relation
   binSlack:6,
   binHeightDefault:95,
   showBins:true,
