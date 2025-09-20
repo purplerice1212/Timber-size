@@ -5,7 +5,7 @@ Timber-size is a single-file HTML tool for planning timber storage layouts. It g
 ## Getting Started
 
 1. Clone this repository or download the source files.
-2. Open `index.html` in a modern web browser.
+2. Open `index.html` in a modern web browser. This is the supported entry point for the app; `fin2.html` is retained only as a legacy reference snapshot.
 3. Enter your storage pattern and dimensions. The 3D, plan, front, and side views update automatically, and cut lists are generated live.
 4. Run automated checks:
    - Command line: `npm test`
@@ -72,5 +72,5 @@ Timber-size can be bundled into a standalone HTML file for easy sharing or offli
 2. Run the pack script: `npm run pack`
 3. Open the generated `dist/app.single.html` in your browser.
 
-The build step bundles the app and writes the output to `dist/app.single.html`.
+The build step bundles the app (via `pack.mjs`, which targets `index.html`) and writes the output to `dist/app.single.html`, excluding the reference-only `fin2.html`.
 
