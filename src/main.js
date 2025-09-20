@@ -36,8 +36,39 @@ function hideRowOverflowWarning(){
   if(banner) banner.style.display='none';
 }
 
+let pendingDrawFrame = null;
+let pendingDrawUsesTimeout = false;
+
+function scheduleViewDrawing(callback){
+  if(pendingDrawFrame!==null){
+    if(pendingDrawUsesTimeout){
+      clearTimeout(pendingDrawFrame);
+    }else if(typeof cancelAnimationFrame==='function'){
+      cancelAnimationFrame(pendingDrawFrame);
+    }
+    pendingDrawFrame=null;
+  }
+
+  if(typeof requestAnimationFrame==='function'){
+    pendingDrawFrame=requestAnimationFrame(()=>{
+      pendingDrawFrame=null;
+      pendingDrawUsesTimeout=false;
+      callback();
+    });
+    pendingDrawUsesTimeout=false;
+  }else{
+    pendingDrawFrame=setTimeout(()=>{
+      pendingDrawFrame=null;
+      pendingDrawUsesTimeout=false;
+      callback();
+    },0);
+    pendingDrawUsesTimeout=true;
+  }
+}
+
 function render(){
-  const model = buildModel(getState());
+  const state = getState();
+  const model = buildModel(state);
   if(model.rowOverflow){
     // Show the warning banner but continue rendering with the
     // clamped levels provided by the model.
@@ -45,33 +76,8 @@ function render(){
   }else{
     hideRowOverflowWarning();
   }
-  const o = getState().showOverlays;
-  const frontEl = document.getElementById('front');
-  if (frontEl) {
-    renderFront(frontEl, model, o);
-  } else {
-    console.warn('Element #front not found. Skipping renderFront.');
-  }
-  const sideEl = document.getElementById('side');
-  if (sideEl) {
-    renderSide(sideEl, model, o);
-  } else {
-    console.warn('Element #side not found. Skipping renderSide.');
-  }
-  const planEl = document.getElementById('plan');
-  if (planEl) {
-    renderPlan(planEl, model, o);
-  } else {
-    console.warn('Element #plan not found. Skipping renderPlan.');
-  }
-  const threeEl = document.getElementById('three');
-  if (threeEl) {
-    render3d(threeEl, model, o);
-  } else {
-    console.warn('Element #three not found. Skipping render3d.');
-  }
 
-  const vm = getState().viewMode;
+  const vm = state.viewMode;
   document.body.classList.toggle('single', vm !== 'quad');
   const viewsRoot = document.getElementById('views');
   if (!viewsRoot) {
@@ -105,6 +111,51 @@ function render(){
     const isThreeDee = vm === 'three';
     toggleQuad3DButton.setAttribute('aria-pressed', String(isThreeDee));
   }
+
+  const overlays = state.showOverlays;
+  const viewSpecs = [
+    {id:'front', mode:'front', renderer:renderFront},
+    {id:'side', mode:'side', renderer:renderSide},
+    {id:'plan', mode:'plan', renderer:renderPlan},
+    {id:'three', mode:'three', renderer:render3d}
+  ];
+  let retryCount = 0;
+  const maxRetries = 5;
+
+  const drawViews = ()=>{
+    const pending = [];
+
+    viewSpecs.forEach(({id, mode, renderer})=>{
+      const shouldDraw = vm === 'quad' || vm === mode;
+      if(!shouldDraw) return;
+
+      const canvas = document.getElementById(id);
+      if(!canvas){
+        console.warn(`Element #${id} not found. Skipping ${renderer.name || 'renderer'}.`);
+        return;
+      }
+
+      if(canvas.clientWidth===0 || canvas.clientHeight===0){
+        pending.push(`#${id}`);
+        return;
+      }
+
+      renderer(canvas, model, overlays);
+    });
+
+    if(pending.length>0){
+      if(retryCount<maxRetries){
+        retryCount+=1;
+        scheduleViewDrawing(drawViews);
+      }else{
+        console.warn(`Skipping render for zero-sized canvas${pending.length>1?'es':''}: ${pending.join(', ')}.`);
+      }
+    }else{
+      retryCount=0;
+    }
+  };
+
+  scheduleViewDrawing(drawViews);
 }
 
 function init() {
