@@ -36,8 +36,11 @@ function hideRowOverflowWarning(){
   if(banner) banner.style.display='none';
 }
 
+let pendingRenderFrame = null;
+
 function render(){
-  const model = buildModel(getState());
+  const state = getState();
+  const model = buildModel(state);
   if(model.rowOverflow){
     // Show the warning banner but continue rendering with the
     // clamped levels provided by the model.
@@ -45,33 +48,8 @@ function render(){
   }else{
     hideRowOverflowWarning();
   }
-  const o = getState().showOverlays;
-  const frontEl = document.getElementById('front');
-  if (frontEl) {
-    renderFront(frontEl, model, o);
-  } else {
-    console.warn('Element #front not found. Skipping renderFront.');
-  }
-  const sideEl = document.getElementById('side');
-  if (sideEl) {
-    renderSide(sideEl, model, o);
-  } else {
-    console.warn('Element #side not found. Skipping renderSide.');
-  }
-  const planEl = document.getElementById('plan');
-  if (planEl) {
-    renderPlan(planEl, model, o);
-  } else {
-    console.warn('Element #plan not found. Skipping renderPlan.');
-  }
-  const threeEl = document.getElementById('three');
-  if (threeEl) {
-    render3d(threeEl, model, o);
-  } else {
-    console.warn('Element #three not found. Skipping render3d.');
-  }
-
-  const vm = getState().viewMode;
+  const overlays = state.showOverlays;
+  const vm = state.viewMode;
   document.body.classList.toggle('single', vm !== 'quad');
   const viewsRoot = document.getElementById('views');
   if (!viewsRoot) {
@@ -104,6 +82,45 @@ function render(){
   if (toggleQuad3DButton) {
     const isThreeDee = vm === 'three';
     toggleQuad3DButton.setAttribute('aria-pressed', String(isThreeDee));
+  }
+
+  const drawViews = ()=>{
+    const frontEl = document.getElementById('front');
+    if (frontEl) {
+      renderFront(frontEl, model, overlays);
+    } else {
+      console.warn('Element #front not found. Skipping renderFront.');
+    }
+    const sideEl = document.getElementById('side');
+    if (sideEl) {
+      renderSide(sideEl, model, overlays);
+    } else {
+      console.warn('Element #side not found. Skipping renderSide.');
+    }
+    const planEl = document.getElementById('plan');
+    if (planEl) {
+      renderPlan(planEl, model, overlays);
+    } else {
+      console.warn('Element #plan not found. Skipping renderPlan.');
+    }
+    const threeEl = document.getElementById('three');
+    if (threeEl) {
+      render3d(threeEl, model, overlays);
+    } else {
+      console.warn('Element #three not found. Skipping render3d.');
+    }
+  };
+
+  if (typeof requestAnimationFrame === 'function') {
+    if (pendingRenderFrame !== null) {
+      cancelAnimationFrame(pendingRenderFrame);
+    }
+    pendingRenderFrame = requestAnimationFrame(()=>{
+      pendingRenderFrame = null;
+      drawViews();
+    });
+  } else {
+    drawViews();
   }
 }
 

@@ -29,10 +29,15 @@ function makeBoxFaces(x,y,z,w,h,d){
 
 export function render3d(canvas, model, overlays=false){
   canvasRef=canvas; modelRef=model; overlayRef=overlays;
+  const width=canvas.clientWidth;
+  const height=canvas.clientHeight;
+  if (!width || !height) {
+    return;
+  }
   const s=getState();
   camState.yaw=s.yaw; camState.pitch=s.pitch; camState.zoom=s.zoom;
   const ctx=canvas.getContext('2d');
-  canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight;
+  canvas.width=width; canvas.height=height;
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   const {min,max}=model.bounds;

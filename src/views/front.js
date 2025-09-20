@@ -3,6 +3,11 @@ import {fitCanvas} from '../utils/fit.js';
 import {typeColors} from '../utils/colors.js';
 
 export function renderFront(canvas, model, overlays = false) {
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  if (!width || !height) {
+    return;
+  }
   const {min, max} = model.bounds;
   const ctx = fitCanvas(canvas, {min:[min[0], min[1]], max:[max[0], max[1]]});
   model.boxes.forEach(box => {
