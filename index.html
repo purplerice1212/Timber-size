@@ -64,6 +64,31 @@
               <p class="dim">Tip: columns edit writes back to <code>patternText</code>.</p>
             </section>
 
+            <!-- Opening planner (height-based) -->
+            <section class="grp" id="grp-opening-planner">
+              <h2>Opening Planner (height)</h2>
+              <div class="row">
+                <div class="ctl" style="width:160px">
+                  <span>Item target height (mm)</span>
+                  <input type="number" id="itemTargetHeight" min="0" step="1">
+                </div>
+                <div class="ctl" style="width:160px">
+                  <span>Top clearance (mm)</span>
+                  <input type="number" id="openClearTop" min="0" step="1">
+                </div>
+                <div class="ctl" style="width:160px">
+                  <span>Sight clearance (mm)</span>
+                  <input type="number" id="openSightClear" min="0" step="1">
+                </div>
+                <!-- optional -->
+                <div class="ctl" style="width:160px">
+                  <span>Rail safety (mm)</span>
+                  <input type="number" id="railSafety" min="0" step="1">
+                </div>
+              </div>
+              <p class="dim">Target per row = max(Bin height, Item height) + Top clearance + Sight clearance + Rail safety</p>
+            </section>
+
             <!-- MVP: Rows -->
             <section class="grp" id="grp-rows">
               <h2>Rows</h2>

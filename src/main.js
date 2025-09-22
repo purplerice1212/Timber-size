@@ -14,7 +14,13 @@ import {
   toggleRearFrame,
   toggleShowBins,
   toggleOverlays,
-  setViewMode
+  setViewMode,
+  setItemTargetHeight,
+  setOpenClearTop,
+  setOpenSightClear,
+  setRailSafety,
+  setRowBinHeight,
+  setRowBinProfile
 } from './state.js';
 import {buildModel} from './model.js';
 import {renderFront} from './views/front.js';
@@ -22,6 +28,7 @@ import {renderSide} from './views/side.js';
 import {renderPlan} from './views/plan.js';
 import {render3d, init3dControls, reset3dCamera} from './views/view3d.js';
 import {segments as stateSegments} from './utils/segments.js';
+import {binHeightProfiles, CUSTOM_BIN_PROFILE_ID, findBinHeightProfile} from './data/binHeightProfiles.js';
 
 function showRowOverflowWarning(){
   let banner=document.getElementById('rowoverflow-warning');
@@ -75,6 +82,45 @@ function scheduleViewDrawing(callback){
 
 const DEFAULT_COLUMN_WIDTH = 325;
 const DEFAULT_ROW_HEIGHT = 120;
+function toNumber(value){
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function getRowProfileId(row){
+  if(row && typeof row.binProfile === 'string'){
+    if(row.binProfile === CUSTOM_BIN_PROFILE_ID) return CUSTOM_BIN_PROFILE_ID;
+    const profile = findBinHeightProfile(row.binProfile);
+    if(profile) return row.binProfile;
+  }
+  return CUSTOM_BIN_PROFILE_ID;
+}
+
+function getRowBinHeight(row, state){
+  if(row){
+    const custom = Math.round(Number(row.binHeight));
+    if(Number.isFinite(custom) && custom >= 0) return custom;
+    const profileId = typeof row.binProfile === 'string' ? row.binProfile : undefined;
+    if(profileId && profileId !== CUSTOM_BIN_PROFILE_ID){
+      const preset = findBinHeightProfile(profileId);
+      if(preset && Number.isFinite(preset.height)) return Math.round(Number(preset.height));
+    }
+  }
+  const fallback = Math.round(toNumber(state.binHeightDefault));
+  return Number.isFinite(fallback) && fallback >= 0 ? fallback : 0;
+}
+
+function computeRowTarget(state, row){
+  const binHeight = getRowBinHeight(row, state);
+  const itemHeight = Math.round(toNumber(state.itemTargetHeight));
+  const topClear = toNumber(state.openClearTop);
+  const sightClear = toNumber(state.openSightClear);
+  const safety = toNumber(state.railSafety);
+  const base = Math.max(binHeight, itemHeight, 0);
+  const total = base + topClear + sightClear + safety;
+  if(!Number.isFinite(total)) return 0;
+  return Math.max(0, Math.round(total));
+}
 
 function getColumnWidthsFromState(state){
   const seg = stateSegments(state);
@@ -162,25 +208,112 @@ function renderRowsUI(state){
 
   const rows=Array.isArray(state.rows)? state.rows : [];
   rows.forEach((row,i)=>{
-    const value=Math.round(Number(row && row.height));
-    const safe=Number.isFinite(value) && value>0 ? value : DEFAULT_ROW_HEIGHT;
+    const heightValue=Math.round(Number(row && row.height));
+    const safe=Number.isFinite(heightValue) && heightValue>0 ? heightValue : DEFAULT_ROW_HEIGHT;
     const wrap=document.createElement('div');
-    wrap.className='row';
-    wrap.innerHTML=`
-      <div class="ctl" style="width:160px">
-        <span>Row height (mm)</span>
-        <input type="number" min="1" step="1" value="${safe}" data-row="${i}">
-      </div>`;
-    list.appendChild(wrap);
-  });
+    wrap.className='row row-stack';
 
-  list.querySelectorAll('input[type="number"]').forEach(inp=>{
-    inp.addEventListener('input', ()=>{
-      const idx=Number(inp.dataset.row);
-      if(!Number.isInteger(idx) || idx<0) return;
-      const val=Math.round(Number(inp.value));
+    const heightCtl=document.createElement('div');
+    heightCtl.className='ctl';
+    heightCtl.style.width='160px';
+    const heightLabel=document.createElement('span');
+    heightLabel.textContent='Row height (mm)';
+    const heightInput=document.createElement('input');
+    heightInput.type='number';
+    heightInput.min='1';
+    heightInput.step='1';
+    heightInput.value=safe;
+    heightCtl.appendChild(heightLabel);
+    heightCtl.appendChild(heightInput);
+    wrap.appendChild(heightCtl);
+
+    heightInput.addEventListener('input', ()=>{
+      const val=Math.round(Number(heightInput.value));
       if(!Number.isFinite(val) || val<=0) return;
-      setRowHeight(idx, val);
+      setRowHeight(i, val);
+    });
+
+    const targetCtl=document.createElement('div');
+    targetCtl.className='ctl';
+    const targetLabel=document.createElement('span');
+    targetLabel.textContent='Target height (mm)';
+    const targetRow=document.createElement('div');
+    targetRow.className='row';
+    targetRow.style.alignItems='center';
+    targetRow.style.gap='.5rem';
+    const targetValue=document.createElement('strong');
+    const target=computeRowTarget(state, row);
+    targetValue.textContent=`${target} mm`;
+    const applyBtn=document.createElement('button');
+    applyBtn.type='button';
+    applyBtn.className='pill';
+    applyBtn.textContent='Apply';
+    const currentHeight=Number.isFinite(heightValue)?heightValue:NaN;
+    const disableApply=!Number.isFinite(target) || target<=0 || (Number.isFinite(currentHeight) && currentHeight===target);
+    applyBtn.disabled=disableApply;
+    applyBtn.addEventListener('click', ()=>{
+      if(applyBtn.disabled) return;
+      setRowHeight(i, target);
+    });
+    targetRow.appendChild(targetValue);
+    targetRow.appendChild(applyBtn);
+    targetCtl.appendChild(targetLabel);
+    targetCtl.appendChild(targetRow);
+    wrap.appendChild(targetCtl);
+
+    const profileRow=document.createElement('div');
+    profileRow.className='row';
+    profileRow.style.flexWrap='wrap';
+    profileRow.style.gap='.5rem';
+
+    const profileCtl=document.createElement('div');
+    profileCtl.className='ctl';
+    profileCtl.style.width='220px';
+    const profileLabel=document.createElement('span');
+    profileLabel.textContent='Bin model';
+    const profileSelect=document.createElement('select');
+    const selectedProfile=getRowProfileId(row);
+    const options=[...binHeightProfiles.map(p=>({value:p.id,label:p.label})), {value:CUSTOM_BIN_PROFILE_ID,label:'Custom'}];
+    options.forEach(opt=>{
+      const option=document.createElement('option');
+      option.value=opt.value;
+      option.textContent=opt.label;
+      if(opt.value===selectedProfile) option.selected=true;
+      profileSelect.appendChild(option);
+    });
+    profileCtl.appendChild(profileLabel);
+    profileCtl.appendChild(profileSelect);
+    profileRow.appendChild(profileCtl);
+
+    const binHeightCtl=document.createElement('div');
+    binHeightCtl.className='ctl';
+    binHeightCtl.style.width='160px';
+    const binHeightLabel=document.createElement('span');
+    binHeightLabel.textContent='Bin height (mm)';
+    const binHeightInput=document.createElement('input');
+    binHeightInput.type='number';
+    binHeightInput.min='0';
+    binHeightInput.step='1';
+    const binHeightValue=getRowBinHeight(row, state);
+    binHeightInput.value=binHeightValue;
+    const isCustom=selectedProfile===CUSTOM_BIN_PROFILE_ID;
+    binHeightInput.disabled=!isCustom;
+    binHeightCtl.appendChild(binHeightLabel);
+    binHeightCtl.appendChild(binHeightInput);
+    profileRow.appendChild(binHeightCtl);
+
+    wrap.appendChild(profileRow);
+    list.appendChild(wrap);
+
+    profileSelect.addEventListener('change', ()=>{
+      setRowBinProfile(i, profileSelect.value);
+    });
+
+    binHeightInput.addEventListener('input', ()=>{
+      if(binHeightInput.value==='') return;
+      const val=Number(binHeightInput.value);
+      if(!Number.isFinite(val) || val<0) return;
+      setRowBinHeight(i, val);
     });
   });
 
@@ -231,6 +364,34 @@ function updateAuxControls(state){
   renderColumnsUI(state);
   renderRowsUI(state);
   bindRailsAndBins(state);
+
+  const itemTargetInput=document.getElementById('itemTargetHeight');
+  if(itemTargetInput){
+    const val = state.itemTargetHeight ?? '';
+    const str = val === '' ? '' : String(val);
+    if(itemTargetInput.value !== str) itemTargetInput.value = str;
+  }
+
+  const topClearInput=document.getElementById('openClearTop');
+  if(topClearInput){
+    const val = state.openClearTop ?? '';
+    const str = val === '' ? '' : String(val);
+    if(topClearInput.value !== str) topClearInput.value = str;
+  }
+
+  const sightClearInput=document.getElementById('openSightClear');
+  if(sightClearInput){
+    const val = state.openSightClear ?? '';
+    const str = val === '' ? '' : String(val);
+    if(sightClearInput.value !== str) sightClearInput.value = str;
+  }
+
+  const railSafetyInput=document.getElementById('railSafety');
+  if(railSafetyInput){
+    const val = state.railSafety ?? '';
+    const str = val === '' ? '' : String(val);
+    if(railSafetyInput.value !== str) railSafetyInput.value = str;
+  }
 
   const patternInput=document.getElementById('pattern-input');
   if(patternInput){
@@ -393,6 +554,38 @@ function init() {
     overlayToggle.addEventListener('change', e=>toggleOverlays(e.target.checked));
   } else {
     console.warn('#overlay-toggle not found. Skipping overlay toggle setup.');
+  }
+
+  const itemTargetInput = document.getElementById('itemTargetHeight');
+  if(itemTargetInput){
+    itemTargetInput.value = s.itemTargetHeight ?? '';
+    itemTargetInput.addEventListener('input', e=>setItemTargetHeight(e.target.value));
+  }else{
+    console.warn('#itemTargetHeight not found. Skipping item target input setup.');
+  }
+
+  const topClearInput = document.getElementById('openClearTop');
+  if(topClearInput){
+    topClearInput.value = s.openClearTop ?? '';
+    topClearInput.addEventListener('input', e=>setOpenClearTop(e.target.value));
+  }else{
+    console.warn('#openClearTop not found. Skipping top clearance input setup.');
+  }
+
+  const sightClearInput = document.getElementById('openSightClear');
+  if(sightClearInput){
+    sightClearInput.value = s.openSightClear ?? '';
+    sightClearInput.addEventListener('input', e=>setOpenSightClear(e.target.value));
+  }else{
+    console.warn('#openSightClear not found. Skipping sight clearance input setup.');
+  }
+
+  const railSafetyInput = document.getElementById('railSafety');
+  if(railSafetyInput){
+    railSafetyInput.value = s.railSafety ?? '';
+    railSafetyInput.addEventListener('input', e=>setRailSafety(e.target.value));
+  }else{
+    console.warn('#railSafety not found. Skipping rail safety input setup.');
   }
 
   const viewButtons = document.querySelectorAll('.toolbar .seg[data-view]');

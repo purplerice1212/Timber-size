@@ -63,7 +63,8 @@ export function buildModel(S) {
         const bx=c.x + (c.w - overall)/2;
         const lipSource = S.binLipThick != null ? S.binLipThick : S.binLip;
         const lip=mm(lipSource);
-        const binH=mm(row.height ?? S.binHeightDefault);
+        const binHeightSource = row && row.binHeight != null ? row.binHeight : (row && row.height != null ? row.height : S.binHeightDefault);
+        const binH=mm(binHeightSource);
         const over=mm(row.overhang ?? 0);
         const gap=mm(row.gap ?? 0);
         const dHere = Math.max(0, D + over); // prevent negative bin depth
