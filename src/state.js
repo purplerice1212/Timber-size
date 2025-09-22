@@ -12,6 +12,10 @@ const state = {
     {height:120,gap:10,overhang:0},
     {height:120,gap:10,overhang:0}
   ],
+  // Height planning (global)
+  openClearTop:10,
+  openSightClear:0,
+  railSafety:3,
   topClear:10,
   bottomClear:10,
   bottomRowRails:false, // default: no base rails (Trofast rule)
@@ -33,6 +37,11 @@ const state = {
   binLip:9,
   binLipThick:9,
   binSlack:6,
+  // Bin height presets (profiles)
+  binHeightProfiles:[
+    {name:'Shallow',height:95},
+    {name:'Deep',height:200}
+  ],
   binHeightDefault:95,
   showBins:true,
   showOverlays:false,
