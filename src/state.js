@@ -34,6 +34,11 @@ const state = {
   binLipThick:9,
   binSlack:6,
   binHeightDefault:95,
+  binHeightProfiles:[],
+  itemTargetHeight:0,
+  openClearTop:0,
+  openSightClear:0,
+  railSafety:0,
   showBins:true,
   showOverlays:false,
 
@@ -95,6 +100,36 @@ export function setRowHeight(index, value){
   if(current && Math.round(Number(current.height)) === next) return;
   const updated = state.rows.map((row, i)=> i===idx ? {...row, height: next} : row);
   state.rows = updated;
+  notify();
+}
+
+export function updateRow(index, patch){
+  if(!Array.isArray(state.rows)) return;
+  const idx = Number(index);
+  if(!Number.isInteger(idx) || idx < 0 || idx >= state.rows.length) return;
+  if(!patch || typeof patch !== 'object') return;
+  const current = state.rows[idx] || {};
+  const nextRow = {...current};
+  let changed = false;
+
+  for (const [key, value] of Object.entries(patch)){
+    if(value === undefined){
+      if(key in nextRow){
+        if(nextRow[key] !== undefined){
+          changed = true;
+        }
+        delete nextRow[key];
+      } else if(current[key] !== undefined){
+        changed = true;
+      }
+    }else if(nextRow[key] !== value){
+      nextRow[key] = value;
+      changed = true;
+    }
+  }
+
+  if(!changed) return;
+  state.rows = state.rows.map((row, i)=> i===idx ? nextRow : row);
   notify();
 }
 
@@ -160,6 +195,38 @@ export function toggleShowBins(value){
 
 export function toggleOverlays(value){
   state.showOverlays = value;
+  notify();
+}
+
+export function setItemTargetHeight(value){
+  const next = Math.round(Number(value));
+  if(!Number.isFinite(next) || next < 0) return;
+  if(state.itemTargetHeight === next) return;
+  state.itemTargetHeight = next;
+  notify();
+}
+
+export function setOpenClearTop(value){
+  const next = Math.round(Number(value));
+  if(!Number.isFinite(next) || next < 0) return;
+  if(state.openClearTop === next) return;
+  state.openClearTop = next;
+  notify();
+}
+
+export function setOpenSightClear(value){
+  const next = Math.round(Number(value));
+  if(!Number.isFinite(next) || next < 0) return;
+  if(state.openSightClear === next) return;
+  state.openSightClear = next;
+  notify();
+}
+
+export function setRailSafety(value){
+  const next = Math.round(Number(value));
+  if(!Number.isFinite(next) || next < 0) return;
+  if(state.railSafety === next) return;
+  state.railSafety = next;
   notify();
 }
 
