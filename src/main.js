@@ -6,6 +6,7 @@ import {
   setPost,
   setPatternText,
   setRowHeight,
+  updateRow,
   addRow,
   removeRow,
   setBottomRowRails,
@@ -14,7 +15,11 @@ import {
   toggleRearFrame,
   toggleShowBins,
   toggleOverlays,
-  setViewMode
+  setViewMode,
+  setItemTargetHeight,
+  setOpenClearTop,
+  setOpenSightClear,
+  setRailSafety
 } from './state.js';
 import {buildModel} from './model.js';
 import {renderFront} from './views/front.js';
@@ -75,6 +80,33 @@ function scheduleViewDrawing(callback){
 
 const DEFAULT_COLUMN_WIDTH = 325;
 const DEFAULT_ROW_HEIGHT = 120;
+
+function getBinHeightForRow(state, row, rowIndex){
+  if (row && Number.isFinite(row.binHeight) && row.binHeight > 0){
+    return Math.round(row.binHeight);
+  }
+  const idx = row ? Number(row.binProfileIndex) : NaN;
+  if (Number.isInteger(idx) && idx >= 0 && Array.isArray(state.binHeightProfiles) && state.binHeightProfiles[idx]){
+    const profileHeight = Math.round(Number(state.binHeightProfiles[idx].height));
+    if (Number.isFinite(profileHeight) && profileHeight > 0){
+      return profileHeight;
+    }
+    const fallback = Math.round(Number(state.binHeightDefault) || 95);
+    return Math.max(1, Number.isFinite(fallback) ? fallback : 95);
+  }
+  const fallback = Math.round(Number(state.binHeightDefault) || 95);
+  return Math.max(1, Number.isFinite(fallback) ? fallback : 95);
+}
+
+function getTargetHeight(state, row){
+  const binH   = getBinHeightForRow(state, row, 0);
+  const itemH  = Math.round(Number(state.itemTargetHeight) || 0);
+  const clearT = Math.round(Number(state.openClearTop) || 0);
+  const sight  = Math.round(Number(state.openSightClear) || 0);
+  const safety = Math.round(Number(state.railSafety) || 0);
+  const basis  = Math.max(binH, itemH);
+  return Math.max(1, basis + clearT + sight + safety);
+}
 
 function getColumnWidthsFromState(state){
   const seg = stateSegments(state);
@@ -156,38 +188,164 @@ function renderColumnsUI(state){
 }
 
 function renderRowsUI(state){
-  const list=document.getElementById('rowsList');
-  if(!list) return;
-  list.innerHTML='';
+  const list = document.getElementById('rowsList');
+  if (!list) return;
+  list.innerHTML = '';
 
-  const rows=Array.isArray(state.rows)? state.rows : [];
-  rows.forEach((row,i)=>{
-    const value=Math.round(Number(row && row.height));
-    const safe=Number.isFinite(value) && value>0 ? value : DEFAULT_ROW_HEIGHT;
-    const wrap=document.createElement('div');
-    wrap.className='row';
-    wrap.innerHTML=`
-      <div class="ctl" style="width:160px">
+  const rows = Array.isArray(state.rows) && state.rows.length ? state.rows : [{height:DEFAULT_ROW_HEIGHT, gap:0, overhang:0}];
+
+  rows.forEach((r, i)=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'row';
+    const rowHeight = Math.round(Number(r && r.height) || 0);
+    const profs = Array.isArray(state.binHeightProfiles) ? state.binHeightProfiles : [];
+    const hasCustom = r && Number.isFinite(r.binHeight) && r.binHeight > 0;
+    const selValue = hasCustom ? 'custom' : (Number.isInteger(r && r.binProfileIndex) ? String(r.binProfileIndex) : '');
+    const target = getTargetHeight(state, r || {});
+
+    wrap.innerHTML = `
+      <div class="ctl" style="width:140px">
         <span>Row height (mm)</span>
-        <input type="number" min="1" step="1" value="${safe}" data-row="${i}">
-      </div>`;
+        <input type="number" min="1" step="1" value="${Math.max(1, rowHeight)}" data-row="${i}">
+      </div>
+
+      <div class="ctl" style="width:160px">
+        <span>Bin profile</span>
+        <select data-pro="${i}">
+          <option value="">(Default)</option>
+          ${profs.map((p,idx)=>`<option value="${idx}" ${selValue===String(idx)?'selected':''}>${p.name} (${Math.round(Number(p.height)||0)}mm)</option>`).join('')}
+          <option value="custom" ${selValue==='custom'?'selected':''}>Custom…</option>
+        </select>
+      </div>
+
+      <div class="ctl" style="width:140px; ${selValue==='custom'?'':'display:none'}" data-custom="${i}">
+        <span>Bin height (mm)</span>
+        <input type="number" min="1" step="1" value="${hasCustom?Math.round(r.binHeight):''}">
+      </div>
+
+      <div class="ctl" style="width:auto;min-width:200px">
+        <span>Target suggestion</span>
+        <div class="row">
+          <b>${target}</b><span class="dim"> mm</span>
+          <button class="pill" data-apply="${i}">Apply</button>
+        </div>
+      </div>
+    `;
+
     list.appendChild(wrap);
   });
 
-  list.querySelectorAll('input[type="number"]').forEach(inp=>{
-    inp.addEventListener('input', ()=>{
-      const idx=Number(inp.dataset.row);
-      if(!Number.isInteger(idx) || idx<0) return;
-      const val=Math.round(Number(inp.value));
-      if(!Number.isFinite(val) || val<=0) return;
+  list.querySelectorAll('input[type="number"][data-row]').forEach(inp=>{
+    inp.oninput = ()=>{
+      const idx = Number(inp.dataset.row);
+      const val = Math.round(Number(inp.value || 0));
+      if(!Number.isInteger(idx) || idx < 0) return;
+      if(!Number.isFinite(val) || val <= 0) return;
       setRowHeight(idx, val);
-    });
+    };
   });
 
-  const add=document.getElementById('btnAddRow');
-  if(add) add.onclick=()=>addRow();
-  const rm=document.getElementById('btnRemoveRow');
-  if(rm) rm.onclick=()=>removeRow();
+  list.querySelectorAll('select[data-pro]').forEach(sel=>{
+    sel.onchange = ()=>{
+      const idx = Number(sel.dataset.pro);
+      if(!Number.isInteger(idx) || idx < 0) return;
+      const val = sel.value;
+      const current = getState();
+      const row = Array.isArray(current.rows) ? current.rows[idx] : undefined;
+      if(!row) return;
+      if(val === 'custom'){
+        const existing = Number.isFinite(row.binHeight) && row.binHeight > 0 ? Math.round(row.binHeight) : getBinHeightForRow(current, row, idx);
+        updateRow(idx, {binProfileIndex: undefined, binHeight: Math.max(1, existing)});
+        const box = list.querySelector(`[data-custom="${idx}"]`);
+        if(box) box.style.display = '';
+      }else if(val === ''){
+        updateRow(idx, {binProfileIndex: undefined, binHeight: undefined});
+        const box = list.querySelector(`[data-custom="${idx}"]`);
+        if(box) box.style.display = 'none';
+      }else{
+        updateRow(idx, {binProfileIndex: Number(val), binHeight: undefined});
+        const box = list.querySelector(`[data-custom="${idx}"]`);
+        if(box) box.style.display = 'none';
+      }
+    };
+  });
+
+  list.querySelectorAll('[data-custom] input[type="number"]').forEach(inp=>{
+    inp.oninput = ()=>{
+      const holder = inp.closest('[data-custom]');
+      if(!holder) return;
+      const idx = Number(holder.getAttribute('data-custom'));
+      const val = Math.round(Number(inp.value || 0));
+      if(!Number.isInteger(idx) || idx < 0) return;
+      if(!Number.isFinite(val) || val <= 0) return;
+      updateRow(idx, {binHeight: val, binProfileIndex: undefined});
+    };
+  });
+
+  list.querySelectorAll('button[data-apply]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const idx = Number(btn.dataset.apply);
+      if(!Number.isInteger(idx) || idx < 0) return;
+      const current = getState();
+      const row = Array.isArray(current.rows) ? current.rows[idx] : undefined;
+      if(!row) return;
+      const target = getTargetHeight(current, row);
+      setRowHeight(idx, target);
+    };
+  });
+
+  const item = document.getElementById('itemTargetHeight');
+  if (item){
+    const value = state.itemTargetHeight ?? 0;
+    if (item.value !== String(value)) item.value = value;
+    item.oninput = ()=>{
+      const v = Number(item.value);
+      if(Number.isFinite(v) && v >= 0){
+        setItemTargetHeight(v);
+      }
+    };
+  }
+
+  const clearTop = document.getElementById('openClearTop');
+  if (clearTop){
+    const value = state.openClearTop ?? 0;
+    if (clearTop.value !== String(value)) clearTop.value = value;
+    clearTop.oninput = ()=>{
+      const v = Number(clearTop.value);
+      if(Number.isFinite(v) && v >= 0){
+        setOpenClearTop(v);
+      }
+    };
+  }
+
+  const sight = document.getElementById('openSightClear');
+  if (sight){
+    const value = state.openSightClear ?? 0;
+    if (sight.value !== String(value)) sight.value = value;
+    sight.oninput = ()=>{
+      const v = Number(sight.value);
+      if(Number.isFinite(v) && v >= 0){
+        setOpenSightClear(v);
+      }
+    };
+  }
+
+  const rs = document.getElementById('railSafety');
+  if (rs){
+    const value = state.railSafety ?? 0;
+    if (rs.value !== String(value)) rs.value = value;
+    rs.oninput = ()=>{
+      const v = Number(rs.value);
+      if(Number.isFinite(v) && v >= 0){
+        setRailSafety(v);
+      }
+    };
+  }
+
+  const add = document.getElementById('btnAddRow');
+  if (add) add.onclick = ()=>addRow();
+  const rm = document.getElementById('btnRemoveRow');
+  if (rm) rm.onclick = ()=>removeRow();
 }
 
 function bindRailsAndBins(state){
