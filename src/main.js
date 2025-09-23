@@ -198,15 +198,17 @@ function renderRowsUI(state){
     const wrap = document.createElement('div');
     wrap.className = 'row';
     const rowHeight = Math.round(Number(r && r.height) || 0);
+    const sanitizedHeight = Math.max(1, rowHeight);
     const profs = Array.isArray(state.binHeightProfiles) ? state.binHeightProfiles : [];
     const hasCustom = r && Number.isFinite(r.binHeight) && r.binHeight > 0;
     const selValue = hasCustom ? 'custom' : (Number.isInteger(r && r.binProfileIndex) ? String(r.binProfileIndex) : '');
     const target = getTargetHeight(state, r || {});
+    const isTargetApplied = sanitizedHeight === target;
 
     wrap.innerHTML = `
       <div class="ctl" style="width:140px">
         <span>Row height (mm)</span>
-        <input type="number" min="1" step="1" value="${Math.max(1, rowHeight)}" data-row="${i}">
+        <input type="number" min="1" step="1" value="${sanitizedHeight}" data-row="${i}">
       </div>
 
       <div class="ctl" style="width:160px">
@@ -227,7 +229,7 @@ function renderRowsUI(state){
         <span>Target suggestion</span>
         <div class="row">
           <b>${target}</b><span class="dim"> mm</span>
-          <button class="pill" data-apply="${i}">Apply</button>
+          <button class="pill" type="button" data-apply="${i}" ${isTargetApplied ? 'disabled' : ''}>${isTargetApplied ? 'Applied' : 'Apply'}</button>
         </div>
       </div>
     `;
