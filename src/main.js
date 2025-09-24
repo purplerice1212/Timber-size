@@ -622,8 +622,73 @@ function init() {
     if (canvases.length === 0) {
       console.warn('No canvases found under #views.');
     } else {
+      const DRAG_DISTANCE_THRESHOLD = 6;
+      const DRAG_DISTANCE_THRESHOLD_SQ = DRAG_DISTANCE_THRESHOLD * DRAG_DISTANCE_THRESHOLD;
+
       canvases.forEach(cvs=>{
-        cvs.addEventListener('click', ()=>{
+        let activePointerId = null;
+        let pointerStartX = 0;
+        let pointerStartY = 0;
+        let pointerMoved = false;
+        let pointerDown = false;
+        let lastPointerWasDrag = false;
+
+        const resetPointer = () => {
+          activePointerId = null;
+          pointerDown = false;
+          pointerMoved = false;
+        };
+
+        const handlePointerEnd = event => {
+          if (!pointerDown || activePointerId === null || event.pointerId !== activePointerId) {
+            return;
+          }
+          lastPointerWasDrag = pointerMoved || event.type === 'pointercancel';
+          resetPointer();
+        };
+
+        cvs.addEventListener('pointerdown', event => {
+          if (event.pointerType === 'mouse' && typeof event.button === 'number' && event.button !== 0) {
+            resetPointer();
+            return;
+          }
+          lastPointerWasDrag = false;
+          activePointerId = event.pointerId;
+          pointerStartX = event.clientX;
+          pointerStartY = event.clientY;
+          pointerMoved = false;
+          pointerDown = true;
+        });
+
+        cvs.addEventListener('pointermove', event => {
+          if (!pointerDown || activePointerId === null || event.pointerId !== activePointerId || pointerMoved) {
+            return;
+          }
+          const dx = event.clientX - pointerStartX;
+          const dy = event.clientY - pointerStartY;
+          if ((dx * dx + dy * dy) >= DRAG_DISTANCE_THRESHOLD_SQ) {
+            pointerMoved = true;
+          }
+        });
+
+        const markAsDragOnLeave = event => {
+          if (pointerDown && activePointerId !== null && event.pointerId === activePointerId) {
+            pointerMoved = true;
+          }
+        };
+
+        cvs.addEventListener('pointerleave', markAsDragOnLeave);
+        cvs.addEventListener('pointerup', handlePointerEnd);
+        cvs.addEventListener('pointercancel', handlePointerEnd);
+        window.addEventListener('pointerup', handlePointerEnd);
+        window.addEventListener('pointercancel', handlePointerEnd);
+
+        cvs.addEventListener('click', () => {
+          const suppressToggle = lastPointerWasDrag;
+          lastPointerWasDrag = false;
+          if (suppressToggle) {
+            return;
+          }
           const vm = getState().viewMode;
           setViewMode(vm === 'quad' ? cvs.id : 'quad');
         });
