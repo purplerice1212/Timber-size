@@ -622,12 +622,10 @@ function init() {
     if (canvases.length === 0) {
       console.warn('No canvases found under #views.');
     } else {
-      canvases.forEach(cvs=>{
-        cvs.addEventListener('click', ()=>{
-          const vm = getState().viewMode;
-          setViewMode(vm === 'quad' ? cvs.id : 'quad');
-        });
-      });
+      // Canvas interactions now solely control the renderers (e.g. orbit, pan, zoom).
+      // Layout changes should be triggered via the toolbar controls instead of clicks
+      // directly on the viewports, so we intentionally do not wire up any view-mode
+      // toggling handlers here.
     }
   }
 
