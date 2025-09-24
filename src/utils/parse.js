@@ -1,4 +1,4 @@
-export function parseList(txt){
+export function parseList(txt, post = 43){
   const re=/\b(\d+(?:\.\d+)?)\s*(?:mm)?\b/gi;
   const out=[]; let m;
   const str=String(txt);
@@ -6,7 +6,19 @@ export function parseList(txt){
     const n=Math.ceil(parseFloat(m[1]));
     if(Number.isFinite(n) && n>0) out.push(n);
   }
-  return out.length ? out : [43,283,43,43,283,43,43];
+  if(out.length) return out;
+
+  const fallbackPostRaw = Math.round(Number(post));
+  const fallbackPost = Number.isFinite(fallbackPostRaw) && fallbackPostRaw > 0 ? fallbackPostRaw : 43;
+  return [
+    fallbackPost,
+    283,
+    fallbackPost,
+    fallbackPost,
+    283,
+    fallbackPost,
+    fallbackPost
+  ];
 }
 
 export function normalizeSegments(arr, post){
