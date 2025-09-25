@@ -91,8 +91,9 @@ export function buildModel(S) {
         const over=mm(row.overhang ?? 0);
         const gap=mm(row.gap ?? 0);
         const dHere = Math.max(0, D + over); // prevent negative bin depth
-        const yTop = Math.max(0, y + P - binLip);
-        M.boxes.push({type:'bin',x:bx,y:yTop,z:0,w:overall,h:binH,d:dHere,gap});
+        const binTop = yRailTop;
+        const yBottom = binTop - binH;
+        M.boxes.push({type:'bin',x:bx,y:yBottom,z:0,w:overall,h:binH,d:dHere,gap});
       }
     }
   });
