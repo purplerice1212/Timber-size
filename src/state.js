@@ -1,17 +1,20 @@
+import {
+  DEFAULT_POST_MM,
+  DEFAULT_ROW_HEIGHT_MM,
+  DEFAULT_PATTERN_TEXT
+} from './config/defaults.js';
+
+const INITIAL_ROW_TEMPLATE = {height: DEFAULT_ROW_HEIGHT_MM, gap: 10, overhang: 0};
+
 const state = {
   height: 926,
   autoHeight: true,
   depth: 420,
   runnerDepth: 420,
-  post: 43,
+  post: DEFAULT_POST_MM,
   rearFrame: true,
-  patternText: '43,283,43,43,283,43,43',
-  rows: [
-    {height:120,gap:10,overhang:0},
-    {height:120,gap:10,overhang:0},
-    {height:120,gap:10,overhang:0},
-    {height:120,gap:10,overhang:0}
-  ],
+  patternText: DEFAULT_PATTERN_TEXT,
+  rows: Array.from({length: 4}, () => ({...INITIAL_ROW_TEMPLATE})),
   topClear:10,
   bottomClear:10,
   bottomRowRails:false, // default: no base rails (Trofast rule)
@@ -133,13 +136,13 @@ export function updateRow(index, patch){
   notify();
 }
 
-export function addRow(row = {height:120, gap:0, overhang:0}){
+export function addRow(row = {height:DEFAULT_ROW_HEIGHT_MM, gap:0, overhang:0}){
   const base = Array.isArray(state.rows) ? state.rows.slice() : [];
   const rawHeight = Number(row.height);
   const rawGap = Number(row.gap);
   const rawOverhang = Number(row.overhang);
   const template = {
-    height: Number.isFinite(rawHeight) && Math.round(rawHeight) > 0 ? Math.round(rawHeight) : 120,
+    height: Number.isFinite(rawHeight) && Math.round(rawHeight) > 0 ? Math.round(rawHeight) : DEFAULT_ROW_HEIGHT_MM,
     gap: Number.isFinite(rawGap) ? rawGap : 0,
     overhang: Number.isFinite(rawOverhang) ? rawOverhang : 0
   };

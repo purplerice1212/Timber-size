@@ -1,4 +1,6 @@
-export function parseList(txt, post = 43){
+import {DEFAULT_POST_MM, DEFAULT_OPENING_MM} from '../config/defaults.js';
+
+export function parseList(txt, post = DEFAULT_POST_MM){
   const re=/\b(\d+(?:\.\d+)?)\s*(?:mm)?\b/gi;
   const out=[]; let m;
   const str=String(txt);
@@ -9,13 +11,13 @@ export function parseList(txt, post = 43){
   if(out.length) return out;
 
   const fallbackPostRaw = Math.round(Number(post));
-  const fallbackPost = Number.isFinite(fallbackPostRaw) && fallbackPostRaw > 0 ? fallbackPostRaw : 43;
+  const fallbackPost = Number.isFinite(fallbackPostRaw) && fallbackPostRaw > 0 ? fallbackPostRaw : DEFAULT_POST_MM;
   return [
     fallbackPost,
-    283,
+    DEFAULT_OPENING_MM,
     fallbackPost,
     fallbackPost,
-    283,
+    DEFAULT_OPENING_MM,
     fallbackPost,
     fallbackPost
   ];
@@ -31,6 +33,6 @@ export function normalizeSegments(arr, post){
     if(isPost && lastWasPost) continue;
     out.push(n); lastWasPost=isPost;
   }
-  if(out.length<3) out.splice(1,0,283);
+  if(out.length<3) out.splice(1,0,DEFAULT_OPENING_MM);
   return out;
 }

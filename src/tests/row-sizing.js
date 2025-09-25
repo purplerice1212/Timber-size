@@ -5,6 +5,10 @@ import {
   resolveBinHeightMm,
   resolveTargetHeightMm
 } from '../utils/rowSizing.js';
+import {
+  DEFAULT_ROW_HEIGHT_MM,
+  DEFAULT_OPENING_MM
+} from '../config/defaults.js';
 
 export function testRowSizing(){
   const baseState = {
@@ -21,14 +25,14 @@ export function testRowSizing(){
   };
 
   const profileRow = {height: '140mm', binProfileIndex: 1};
-  const profileSizing = describeRowSizing(baseState, profileRow, 120);
+  const profileSizing = describeRowSizing(baseState, profileRow, DEFAULT_ROW_HEIGHT_MM);
   const targetFromProfile = resolveTargetHeightMm(baseState, profileRow);
 
   const customRow = {height: '110mm', binHeight: '200mm'};
-  const customSizing = describeRowSizing(baseState, customRow, 120);
+  const customSizing = describeRowSizing(baseState, customRow, DEFAULT_ROW_HEIGHT_MM);
 
   const parseTests = [
-    parsePositiveMmInput('283mm') === 283,
+    parsePositiveMmInput(`${DEFAULT_OPENING_MM}mm`) === DEFAULT_OPENING_MM,
     parsePositiveMmInput('0.4mm') === null,
     parseNonNegativeMmInput('7.2mm') === 7,
     parseNonNegativeMmInput('bad-value') === null
@@ -42,7 +46,7 @@ export function testRowSizing(){
     customSizing.customBinHeightMm === 200,
     customSizing.binProfileIndex === undefined,
     customSizing.binHeightMm === 200,
-    resolveBinHeightMm(baseState, {binHeight: '0', binProfileIndex: 0}) === 120,
+    resolveBinHeightMm(baseState, {binHeight: '0', binProfileIndex: 0}) === DEFAULT_ROW_HEIGHT_MM,
     ...parseTests
   ];
 
