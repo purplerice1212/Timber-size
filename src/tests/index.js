@@ -10,6 +10,7 @@ import {testBinSlack} from './bin-slack.js';
 import {testBinPlacement} from './bin-placement.js';
 import {testFitCanvasAlignment} from './fit-canvas.js';
 import {testRowSizing} from './row-sizing.js';
+import {testColors} from './colors.js';
 import {fileURLToPath} from 'url';
 
 export function runTests(){
@@ -25,7 +26,8 @@ export function runTests(){
     ...testBinSlack(),
     ...testBinPlacement(),
     ...testFitCanvasAlignment(),
-    ...testRowSizing()
+    ...testRowSizing(),
+    ...testColors()
   ];
   if (typeof console !== 'undefined' && console.table) console.table(results);
   return results;

@@ -1,12 +1,12 @@
 import {drawRect, drawText, drawOverlayDimensions} from '../utils/draw2d.js';
 import {fitCanvas} from '../utils/fit.js';
-import {typeColors} from '../utils/colors.js';
+import {getTypeColor} from '../utils/colors.js';
 
 export function renderPlan(canvas, model, overlays = false) {
   const {min, max} = model.bounds;
   const ctx = fitCanvas(canvas, {min:[min[0], min[2]], max:[max[0], max[2]]});
   model.boxes.forEach(box => {
-    const color = typeColors[box.type] || '#fff';
+    const color = getTypeColor(box.type);
     drawRect(ctx, box.x, box.z, box.w, box.d, color);
   });
   if (overlays) {
