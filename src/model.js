@@ -5,16 +5,7 @@ import {channels} from './utils/channels.js';
 import {computeLevels} from './utils/computeLevels.js';
 import {railXPositions} from './utils/railXPositions.js';
 import {autoHeightFromRows} from './utils/autoHeight.js';
-
-// 取每列 bin 高度：自訂 -> profile -> 預設
-function binHeightForRow(S, row){
-  if (row && Number.isFinite(row.binHeight) && row.binHeight > 0) return row.binHeight;
-  const idx = Number(row?.binProfileIndex);
-  if (Number.isInteger(idx) && idx >= 0 && Array.isArray(S.binHeightProfiles) && S.binHeightProfiles[idx]){
-    return S.binHeightProfiles[idx].height;
-  }
-  return S.binHeightDefault;
-}
+import {resolveBinHeightMm} from './utils/rowSizing.js';
 
 export function buildModel(S) {
   const P = S.post;
@@ -87,7 +78,7 @@ export function buildModel(S) {
         const bodyW=Math.min(mm(S.binBody), Math.max(0, c.w-2-slack));
         const overall= bodyW + 2*mm(S.binFlange) + slack;
         const bx=c.x + (c.w - overall)/2;
-        const binH=mm( binHeightForRow(S, row) );
+        const binH=resolveBinHeightMm(S, row);
         const over=mm(row.overhang ?? 0);
         const gap=mm(row.gap ?? 0);
         const dHere = Math.max(0, D + over); // prevent negative bin depth
