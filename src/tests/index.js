@@ -7,6 +7,7 @@ import {testMM} from './mm.js';
 import {testLevels} from './levels.js';
 import {testPinchZoom} from './pinch-zoom.js';
 import {testBinSlack} from './bin-slack.js';
+import {testBinPlacement} from './bin-placement.js';
 import {testFitCanvasAlignment} from './fit-canvas.js';
 import {fileURLToPath} from 'url';
 
@@ -21,6 +22,7 @@ export function runTests(){
     ...testLevels(),
     ...testPinchZoom(),
     ...testBinSlack(),
+    ...testBinPlacement()
     ...testFitCanvasAlignment()
   ];
   if (typeof console !== 'undefined' && console.table) console.table(results);

@@ -100,11 +100,14 @@ function getBinHeightForRow(state, row, rowIndex){
 
 function getTargetHeight(state, row){
   const binH   = getBinHeightForRow(state, row, 0);
+  const lipRaw = state.binLipThick != null ? state.binLipThick : state.binLip;
+  const lip    = Math.max(0, Math.round(Number(lipRaw) || 0));
+  const binBasis = binH + lip;
   const itemH  = Math.round(Number(state.itemTargetHeight) || 0);
   const clearT = Math.round(Number(state.openClearTop) || 0);
   const sight  = Math.round(Number(state.openSightClear) || 0);
   const safety = Math.round(Number(state.railSafety) || 0);
-  const basis  = Math.max(binH, itemH);
+  const basis  = Math.max(binBasis, itemH);
   return Math.max(1, basis + clearT + sight + safety);
 }
 
