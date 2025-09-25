@@ -27,6 +27,12 @@ import {renderSide} from './views/side.js';
 import {renderPlan} from './views/plan.js';
 import {render3d, init3dControls, reset3dCamera} from './views/view3d.js';
 import {segments as stateSegments} from './utils/segments.js';
+import {
+  describeRowSizing,
+  parseNonNegativeMmInput,
+  parsePositiveMmInput,
+  resolveClearancesMm
+} from './utils/rowSizing.js';
 
 function showRowOverflowWarning(){
   let banner=document.getElementById('rowoverflow-warning');
@@ -80,36 +86,6 @@ function scheduleViewDrawing(callback){
 
 const DEFAULT_COLUMN_WIDTH = 325;
 const DEFAULT_ROW_HEIGHT = 120;
-
-function getBinHeightForRow(state, row, rowIndex){
-  if (row && Number.isFinite(row.binHeight) && row.binHeight > 0){
-    return Math.round(row.binHeight);
-  }
-  const idx = row ? Number(row.binProfileIndex) : NaN;
-  if (Number.isInteger(idx) && idx >= 0 && Array.isArray(state.binHeightProfiles) && state.binHeightProfiles[idx]){
-    const profileHeight = Math.round(Number(state.binHeightProfiles[idx].height));
-    if (Number.isFinite(profileHeight) && profileHeight > 0){
-      return profileHeight;
-    }
-    const fallback = Math.round(Number(state.binHeightDefault) || 95);
-    return Math.max(1, Number.isFinite(fallback) ? fallback : 95);
-  }
-  const fallback = Math.round(Number(state.binHeightDefault) || 95);
-  return Math.max(1, Number.isFinite(fallback) ? fallback : 95);
-}
-
-function getTargetHeight(state, row){
-  const binH   = getBinHeightForRow(state, row, 0);
-  const lipRaw = state.binLipThick != null ? state.binLipThick : state.binLip;
-  const lip    = Math.max(0, Math.round(Number(lipRaw) || 0));
-  const binBasis = binH + lip;
-  const itemH  = Math.round(Number(state.itemTargetHeight) || 0);
-  const clearT = Math.round(Number(state.openClearTop) || 0);
-  const sight  = Math.round(Number(state.openSightClear) || 0);
-  const safety = Math.round(Number(state.railSafety) || 0);
-  const basis  = Math.max(binBasis, itemH);
-  return Math.max(1, basis + clearT + sight + safety);
-}
 
 function getColumnWidthsFromState(state){
   const seg = stateSegments(state);
@@ -196,17 +172,19 @@ function renderRowsUI(state){
   list.innerHTML = '';
 
   const rows = Array.isArray(state.rows) && state.rows.length ? state.rows : [{height:DEFAULT_ROW_HEIGHT, gap:0, overhang:0}];
+  const clearances = resolveClearancesMm(state);
 
   rows.forEach((r, i)=>{
     const wrap = document.createElement('div');
     wrap.className = 'row';
-    const rowHeight = Math.round(Number(r && r.height) || 0);
-    const sanitizedHeight = Math.max(1, rowHeight);
+    const sizing = describeRowSizing(state, r || {}, DEFAULT_ROW_HEIGHT);
+    const sanitizedHeight = sizing.heightMm;
     const profs = Array.isArray(state.binHeightProfiles) ? state.binHeightProfiles : [];
-    const hasCustom = r && Number.isFinite(r.binHeight) && r.binHeight > 0;
-    const selValue = hasCustom ? 'custom' : (Number.isInteger(r && r.binProfileIndex) ? String(r.binProfileIndex) : '');
-    const target = getTargetHeight(state, r || {});
+    const hasCustom = sizing.customBinHeightMm !== undefined;
+    const selValue = hasCustom ? 'custom' : (sizing.binProfileIndex != null ? String(sizing.binProfileIndex) : '');
+    const target = sizing.targetHeightMm;
     const isTargetApplied = sanitizedHeight === target;
+    const customValue = hasCustom && sizing.customBinHeightMm !== undefined ? sizing.customBinHeightMm : '';
 
     wrap.innerHTML = `
       <div class="ctl" style="width:140px">
@@ -225,7 +203,7 @@ function renderRowsUI(state){
 
       <div class="ctl" style="width:140px; ${selValue==='custom'?'':'display:none'}" data-custom="${i}">
         <span>Bin height (mm)</span>
-        <input type="number" min="1" step="1" value="${hasCustom?Math.round(r.binHeight):''}">
+        <input type="number" min="1" step="1" value="${customValue}">
       </div>
 
       <div class="ctl" style="width:auto;min-width:200px">
@@ -243,10 +221,10 @@ function renderRowsUI(state){
   list.querySelectorAll('input[type="number"][data-row]').forEach(inp=>{
     inp.oninput = ()=>{
       const idx = Number(inp.dataset.row);
-      const val = Math.round(Number(inp.value || 0));
       if(!Number.isInteger(idx) || idx < 0) return;
-      if(!Number.isFinite(val) || val <= 0) return;
-      setRowHeight(idx, val);
+      const parsed = parsePositiveMmInput(inp.value);
+      if(parsed == null) return;
+      setRowHeight(idx, parsed);
     };
   });
 
@@ -258,9 +236,10 @@ function renderRowsUI(state){
       const current = getState();
       const row = Array.isArray(current.rows) ? current.rows[idx] : undefined;
       if(!row) return;
+      const sizing = describeRowSizing(current, row || {}, DEFAULT_ROW_HEIGHT);
       if(val === 'custom'){
-        const existing = Number.isFinite(row.binHeight) && row.binHeight > 0 ? Math.round(row.binHeight) : getBinHeightForRow(current, row, idx);
-        updateRow(idx, {binProfileIndex: undefined, binHeight: Math.max(1, existing)});
+        const fallback = sizing.customBinHeightMm ?? sizing.binHeightMm;
+        updateRow(idx, {binProfileIndex: undefined, binHeight: Math.max(1, fallback)});
         const box = list.querySelector(`[data-custom="${idx}"]`);
         if(box) box.style.display = '';
       }else if(val === ''){
@@ -280,10 +259,10 @@ function renderRowsUI(state){
       const holder = inp.closest('[data-custom]');
       if(!holder) return;
       const idx = Number(holder.getAttribute('data-custom'));
-      const val = Math.round(Number(inp.value || 0));
       if(!Number.isInteger(idx) || idx < 0) return;
-      if(!Number.isFinite(val) || val <= 0) return;
-      updateRow(idx, {binHeight: val, binProfileIndex: undefined});
+      const parsed = parsePositiveMmInput(inp.value);
+      if(parsed == null) return;
+      updateRow(idx, {binHeight: parsed, binProfileIndex: undefined});
     };
   });
 
@@ -294,56 +273,52 @@ function renderRowsUI(state){
       const current = getState();
       const row = Array.isArray(current.rows) ? current.rows[idx] : undefined;
       if(!row) return;
-      const target = getTargetHeight(current, row);
-      setRowHeight(idx, target);
+      const sizing = describeRowSizing(current, row || {}, DEFAULT_ROW_HEIGHT);
+      setRowHeight(idx, sizing.targetHeightMm);
     };
   });
 
   const item = document.getElementById('itemTargetHeight');
   if (item){
-    const value = state.itemTargetHeight ?? 0;
-    if (item.value !== String(value)) item.value = value;
+    const {itemTargetMm} = clearances;
+    if (item.value !== String(itemTargetMm)) item.value = itemTargetMm;
     item.oninput = ()=>{
-      const v = Number(item.value);
-      if(Number.isFinite(v) && v >= 0){
-        setItemTargetHeight(v);
-      }
+      const parsed = parseNonNegativeMmInput(item.value);
+      if(parsed == null) return;
+      setItemTargetHeight(parsed);
     };
   }
 
   const clearTop = document.getElementById('openClearTop');
   if (clearTop){
-    const value = state.openClearTop ?? 0;
-    if (clearTop.value !== String(value)) clearTop.value = value;
+    const {openClearTopMm} = clearances;
+    if (clearTop.value !== String(openClearTopMm)) clearTop.value = openClearTopMm;
     clearTop.oninput = ()=>{
-      const v = Number(clearTop.value);
-      if(Number.isFinite(v) && v >= 0){
-        setOpenClearTop(v);
-      }
+      const parsed = parseNonNegativeMmInput(clearTop.value);
+      if(parsed == null) return;
+      setOpenClearTop(parsed);
     };
   }
 
   const sight = document.getElementById('openSightClear');
   if (sight){
-    const value = state.openSightClear ?? 0;
-    if (sight.value !== String(value)) sight.value = value;
+    const {openSightClearMm} = clearances;
+    if (sight.value !== String(openSightClearMm)) sight.value = openSightClearMm;
     sight.oninput = ()=>{
-      const v = Number(sight.value);
-      if(Number.isFinite(v) && v >= 0){
-        setOpenSightClear(v);
-      }
+      const parsed = parseNonNegativeMmInput(sight.value);
+      if(parsed == null) return;
+      setOpenSightClear(parsed);
     };
   }
 
   const rs = document.getElementById('railSafety');
   if (rs){
-    const value = state.railSafety ?? 0;
-    if (rs.value !== String(value)) rs.value = value;
+    const {railSafetyMm} = clearances;
+    if (rs.value !== String(railSafetyMm)) rs.value = railSafetyMm;
     rs.oninput = ()=>{
-      const v = Number(rs.value);
-      if(Number.isFinite(v) && v >= 0){
-        setRailSafety(v);
-      }
+      const parsed = parseNonNegativeMmInput(rs.value);
+      if(parsed == null) return;
+      setRailSafety(parsed);
     };
   }
 
