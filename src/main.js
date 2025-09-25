@@ -607,6 +607,13 @@ function init() {
     }
   }
 
+  const scheduleResizeRender = ()=>scheduleViewDrawing(render);
+  window.addEventListener('resize', scheduleResizeRender, {passive: true});
+  if(viewsRoot && typeof ResizeObserver === 'function'){
+    const resizeObserver = new ResizeObserver(()=>scheduleResizeRender());
+    resizeObserver.observe(viewsRoot);
+  }
+
   const threeEl = document.getElementById('three');
   if (threeEl) {
     init3dControls(threeEl);
