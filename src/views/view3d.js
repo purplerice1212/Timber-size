@@ -1,4 +1,4 @@
-import {typeColors} from '../utils/colors.js';
+import {getTypeColor} from '../utils/colors.js';
 import {getState, setCamera} from '../state.js';
 import {clamp} from '../utils/math.js';
 
@@ -50,7 +50,7 @@ export function render3d(canvas, model, overlays=false){
 
   const faces=[];
   model.boxes.forEach(b=>{
-    const base=typeColors[b.type]||'#ddd';
+    const base=getTypeColor(b.type);
     makeBoxFaces(b.x,b.y,b.z,b.w,b.h,b.d).forEach(facePts=>{
       const tp=facePts.map(pt=>{
         const p0=[pt[0]-cx, pt[1]-cy, pt[2]-cz];
