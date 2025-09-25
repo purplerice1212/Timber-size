@@ -1,4 +1,5 @@
 import {mm} from './mm.js';
+import {DEFAULT_ROW_HEIGHT_MM} from '../config/defaults.js';
 
 function parseMmString(value){
   if (value === null || value === undefined) return null;
@@ -72,10 +73,11 @@ export function resolveTargetHeightMm(state, row){
   return Math.max(1, basis + openClearTopMm + openSightClearMm + railSafetyMm);
 }
 
-export function describeRowSizing(state, row, fallbackHeightMm = 120){
+export function describeRowSizing(state, row, fallbackHeightMm = DEFAULT_ROW_HEIGHT_MM){
   const fallbackHeight = mm(fallbackHeightMm);
   const rawHeight = mm(row?.height);
-  const heightMm = roundOrFallback(rawHeight, fallbackHeight > 0 ? fallbackHeight : 120, 1);
+  const heightFallback = fallbackHeight > 0 ? fallbackHeight : DEFAULT_ROW_HEIGHT_MM;
+  const heightMm = roundOrFallback(rawHeight, heightFallback, 1);
   const gapMm = nonNegativeRound(mm(row?.gap));
   const overhangRaw = mm(row?.overhang);
   const overhangMm = Number.isFinite(overhangRaw) ? Math.round(overhangRaw) : 0;

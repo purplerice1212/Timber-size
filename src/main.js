@@ -33,6 +33,7 @@ import {
   parsePositiveMmInput,
   resolveClearancesMm
 } from './utils/rowSizing.js';
+import {DEFAULT_ROW_HEIGHT_MM} from './config/defaults.js';
 
 function showRowOverflowWarning(){
   let banner=document.getElementById('rowoverflow-warning');
@@ -85,8 +86,6 @@ function scheduleViewDrawing(callback){
 }
 
 const DEFAULT_COLUMN_WIDTH = 325;
-const DEFAULT_ROW_HEIGHT = 120;
-
 function getColumnWidthsFromState(state){
   const seg = stateSegments(state);
   const widths = [];
@@ -171,13 +170,13 @@ function renderRowsUI(state){
   if (!list) return;
   list.innerHTML = '';
 
-  const rows = Array.isArray(state.rows) && state.rows.length ? state.rows : [{height:DEFAULT_ROW_HEIGHT, gap:0, overhang:0}];
+  const rows = Array.isArray(state.rows) && state.rows.length ? state.rows : [{height:DEFAULT_ROW_HEIGHT_MM, gap:0, overhang:0}];
   const clearances = resolveClearancesMm(state);
 
   rows.forEach((r, i)=>{
     const wrap = document.createElement('div');
     wrap.className = 'row';
-    const sizing = describeRowSizing(state, r || {}, DEFAULT_ROW_HEIGHT);
+    const sizing = describeRowSizing(state, r || {}, DEFAULT_ROW_HEIGHT_MM);
     const sanitizedHeight = sizing.heightMm;
     const profs = Array.isArray(state.binHeightProfiles) ? state.binHeightProfiles : [];
     const hasCustom = sizing.customBinHeightMm !== undefined;
@@ -236,7 +235,7 @@ function renderRowsUI(state){
       const current = getState();
       const row = Array.isArray(current.rows) ? current.rows[idx] : undefined;
       if(!row) return;
-      const sizing = describeRowSizing(current, row || {}, DEFAULT_ROW_HEIGHT);
+      const sizing = describeRowSizing(current, row || {}, DEFAULT_ROW_HEIGHT_MM);
       if(val === 'custom'){
         const fallback = sizing.customBinHeightMm ?? sizing.binHeightMm;
         updateRow(idx, {binProfileIndex: undefined, binHeight: Math.max(1, fallback)});
@@ -273,7 +272,7 @@ function renderRowsUI(state){
       const current = getState();
       const row = Array.isArray(current.rows) ? current.rows[idx] : undefined;
       if(!row) return;
-      const sizing = describeRowSizing(current, row || {}, DEFAULT_ROW_HEIGHT);
+      const sizing = describeRowSizing(current, row || {}, DEFAULT_ROW_HEIGHT_MM);
       setRowHeight(idx, sizing.targetHeightMm);
     };
   });
