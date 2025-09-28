@@ -84,7 +84,8 @@ export function setDepth(value){
 }
 
 export function setPost(value){
-  state.post = parseNumber(value, 0);
+  const raw = parseNumber(value, 0);
+  state.post = raw > 0 ? raw : DEFAULT_POST_MM;
   notify();
 }
 

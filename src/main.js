@@ -27,6 +27,7 @@ import {renderSide} from './views/side.js';
 import {renderPlan} from './views/plan.js';
 import {render3d, init3dControls, reset3dCamera} from './views/view3d.js';
 import {segments as stateSegments} from './utils/segments.js';
+import {postSize} from './utils/post.js';
 import {
   describeRowSizing,
   parseNonNegativeMmInput,
@@ -102,8 +103,7 @@ function applyColumnWidths(widths){
     .map(v=>Math.round(Number(v)))
     .filter(v=>Number.isFinite(v) && v>0);
   const values = sanitized.length ? sanitized : [DEFAULT_COLUMN_WIDTH];
-  const postRaw = Math.round(Number(state.post));
-  const post = Number.isFinite(postRaw) && postRaw>0 ? postRaw : 1;
+  const post = Math.round(postSize(state));
   const seg = [post];
   values.forEach(w=>{
     seg.push(w);
@@ -494,7 +494,7 @@ function init() {
 
   const postInput = document.getElementById('post-input');
   if (postInput) {
-    postInput.value = s.post;
+    postInput.value = postSize(s);
     postInput.addEventListener('input', e=>setPost(e.target.value));
   } else {
     console.warn('#post-input not found. Skipping post input setup.');
