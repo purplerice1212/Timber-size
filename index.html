@@ -57,13 +57,60 @@
         </div>
         <div id="controlsRoot">
           <form id="controls">
-            <label>Height <input id="height-input" type="number" /></label>
-            <label>Depth <input id="depth-input" type="number" /></label>
-            <label>Post <input id="post-input" type="number" /></label>
-            <label>Pattern <input id="pattern-input" type="text" /></label>
-            <label><input id="rearFrame-toggle" type="checkbox" /> Rear Frame</label>
-            <label><input id="showBins-toggle" type="checkbox" /> Show Bins</label>
-            <label><input id="overlay-toggle" type="checkbox" /> Overlays</label>
+            <section class="grp grp-basics">
+              <h2>Layout Basics</h2>
+              <p class="dim">Set the foundational dimensions and rail pattern for the system.</p>
+              <div class="field-grid">
+                <label class="field">
+                  <span class="field-title">Height</span>
+                  <span class="field-hint">Overall frame height (mm)</span>
+                  <input id="height-input" type="number" />
+                </label>
+                <label class="field">
+                  <span class="field-title">Depth</span>
+                  <span class="field-hint">Total projection from the wall (mm)</span>
+                  <input id="depth-input" type="number" />
+                </label>
+                <label class="field">
+                  <span class="field-title">Post width</span>
+                  <span class="field-hint">Face width of each support post (mm)</span>
+                  <input id="post-input" type="number" />
+                </label>
+                <label class="field field-wide">
+                  <span class="field-title">Pattern</span>
+                  <span class="field-hint">Column widths separated by commas, e.g. <code>900,600</code></span>
+                  <input id="pattern-input" type="text" />
+                </label>
+              </div>
+            </section>
+
+            <section class="grp grp-display">
+              <h2>Display &amp; Overlays</h2>
+              <p class="dim">Toggle helper views to focus on structure, bins, or planning overlays.</p>
+              <div class="toggle-grid">
+                <label class="toggle">
+                  <input id="rearFrame-toggle" type="checkbox" />
+                  <div class="toggle-body">
+                    <span class="toggle-title">Rear frame</span>
+                    <span class="toggle-hint">Include rear uprights for added rigidity.</span>
+                  </div>
+                </label>
+                <label class="toggle">
+                  <input id="showBins-toggle" type="checkbox" />
+                  <div class="toggle-body">
+                    <span class="toggle-title">Show bins</span>
+                    <span class="toggle-hint">Preview bins inside each planned opening.</span>
+                  </div>
+                </label>
+                <label class="toggle">
+                  <input id="overlay-toggle" type="checkbox" />
+                  <div class="toggle-body">
+                    <span class="toggle-title">Overlays</span>
+                    <span class="toggle-hint">Highlight clearances and target heights.</span>
+                  </div>
+                </label>
+              </div>
+            </section>
 
             <!-- MVP: Columns -->
             <section class="grp" id="grp-columns">
