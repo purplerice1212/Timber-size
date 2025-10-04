@@ -15,3 +15,22 @@ export function testExtraSupport(){
     {name:'extra bottom beam lift configurable', pass: lifts}
   ];
 }
+
+export function testSupportClearance(){
+  const S = {
+    ...getState(),
+    autoHeight:false,
+    height:100,
+    post:43,
+    topSupport:true,
+    bottomSupport:true,
+    topDrop:0,
+    bottomLift:0
+  };
+  const M = buildModel(S);
+  const supports = M.boxes.filter(b=>b.type==='support');
+  const none = supports.length === 0;
+  return [
+    {name:'supports omitted when height below 3x post', pass: none}
+  ];
+}

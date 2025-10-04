@@ -41,9 +41,15 @@ export function buildModel(S) {
     const on = opts.on ?? (where==='top'? S.topSupport : S.bottomSupport); if(!on) return;
     const orient= opts.orient ?? (where==='top'? S.topOrient : S.bottomOrient);
     const size  = opts.size  ?? (where==='top'? mm(S.topSize) : mm(S.bottomSize));
+    const usable = H - 2*P;
+    if (usable < P) return;
     const yPos  = opts.yPos  ?? (where==='top'
-      ? clamp(P + mm(S.topDrop), P, H-2*P)
-      : clamp(H - 2*P - mm(S.bottomLift), P, H-2*P));
+      ? clamp(P + mm(S.topDrop), P, usable)
+      : clamp(usable - mm(S.bottomLift), P, usable));
+    if (yPos + P > H - P) {
+      console.assert(false, 'Support intrudes into lintel space');
+      return;
+    }
     if(orient==='X'){
       const zMid=(D-size)/2; M.boxes.push({type:'support',x:0,y:yPos,z:zMid,w:W,h:P,d:size});
     }else{

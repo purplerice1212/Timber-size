@@ -2,7 +2,7 @@ import {testParser} from './parser.js';
 import {testClamp} from './clamp.js';
 import {testCounts} from './counts.js';
 import {testStateSetters} from './state-setters.js';
-import {testExtraSupport} from './supports.js';
+import {testExtraSupport, testSupportClearance} from './supports.js';
 import {testMM} from './mm.js';
 import {testLevels} from './levels.js';
 import {testPinchZoom} from './pinch-zoom.js';
@@ -20,6 +20,7 @@ export function runTests(){
     ...testCounts(),
     ...testStateSetters(),
     ...testExtraSupport(),
+    ...testSupportClearance(),
     ...testMM(),
     ...testLevels(),
     ...testPinchZoom(),
