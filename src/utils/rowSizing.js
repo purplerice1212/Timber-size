@@ -60,7 +60,8 @@ export function resolveClearancesMm(state){
     itemTargetMm: nonNegativeRound(mm(state.itemTargetHeight)),
     openClearTopMm: nonNegativeRound(mm(state.openClearTop)),
     openSightClearMm: nonNegativeRound(mm(state.openSightClear)),
-    railSafetyMm: nonNegativeRound(mm(state.railSafety))
+    railSafetyMm: nonNegativeRound(mm(state.railSafety)),
+    bottomClearMm: nonNegativeRound(mm(state.bottomClear))
   };
 }
 

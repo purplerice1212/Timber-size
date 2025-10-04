@@ -19,7 +19,8 @@ import {
   setItemTargetHeight,
   setOpenClearTop,
   setOpenSightClear,
-  setRailSafety
+  setRailSafety,
+  setBottomClear
 } from './state.js';
 import {buildModel} from './model.js';
 import {renderFront} from './views/front.js';
@@ -321,6 +322,12 @@ function renderRowsUI(state){
     };
   }
 
+  const bottomClear = document.getElementById('bottomClear');
+  if (bottomClear){
+    const {bottomClearMm} = clearances;
+    if (bottomClear.value !== String(bottomClearMm)) bottomClear.value = bottomClearMm;
+  }
+
   const add = document.getElementById('btnAddRow');
   if (add) add.onclick = ()=>addRow();
   const rm = document.getElementById('btnRemoveRow');
@@ -530,6 +537,18 @@ function init() {
     overlayToggle.addEventListener('change', e=>toggleOverlays(e.target.checked));
   } else {
     console.warn('#overlay-toggle not found. Skipping overlay toggle setup.');
+  }
+
+  const bottomClearInput = document.getElementById('bottomClear');
+  if (bottomClearInput) {
+    bottomClearInput.value = s.bottomClear;
+    bottomClearInput.addEventListener('input', ()=>{
+      const parsed = parseNonNegativeMmInput(bottomClearInput.value);
+      if(parsed == null) return;
+      setBottomClear(parsed);
+    });
+  } else {
+    console.warn('#bottomClear not found. Skipping bottom clearance input setup.');
   }
 
   const viewButtons = document.querySelectorAll('.toolbar .seg[data-view]');

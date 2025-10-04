@@ -88,6 +88,14 @@ export function setPost(value){
   notify();
 }
 
+export function setBottomClear(value){
+  const parsed = parseNumber(value, 0);
+  const next = Math.max(0, Math.round(parsed));
+  if(state.bottomClear === next) return;
+  state.bottomClear = next;
+  notify();
+}
+
 export function setPatternText(value){
   state.patternText = value;
   notify();
