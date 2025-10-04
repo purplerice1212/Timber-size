@@ -1,8 +1,9 @@
 import {mm} from './mm.js';
 import {clamp} from './math.js';
+import {postSize} from './post.js';
 
 export function computeLevels(S){
-  const P = S.post;
+  const P = postSize(S);
   const bottomClearMm = mm(S.bottomClear);
   let y = P + bottomClearMm;
   const maxLevel = (S.autoHeight ? 1e9 : S.height) - P;

@@ -1,5 +1,6 @@
 import {mm} from './mm.js';
 import {computeLevels} from './computeLevels.js';
+import {postSize} from './post.js';
 
 export function autoHeightFromRows(S, shared){
   const computed = shared ?? computeLevels(S);
@@ -10,7 +11,7 @@ export function autoHeightFromRows(S, shared){
     heights += row.heightMm ?? 0;
     gaps += row.gapMm ?? 0;
   }
-  const P = S.post;
+  const P = postSize(S);
   const lintels = P * ((rows.length || S.rows.length) + 1);
   const bottomClear = computed.bottomClearMm ?? mm(S.bottomClear);
   const topClear = mm(S.topClear);

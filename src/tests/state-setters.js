@@ -13,6 +13,7 @@ import {
   toggleRearFrame,
   setBottomClear
 } from '../state.js';
+import {DEFAULT_POST_MM} from '../config/defaults.js';
 
 export function testStateSetters(){
   const base = JSON.parse(JSON.stringify(getState()));
@@ -29,9 +30,9 @@ export function testStateSetters(){
   const depthNaN = getState().depth === 0;
 
   setPost(-1);
-  const postNeg = getState().post === 0;
+  const postNeg = getState().post === DEFAULT_POST_MM;
   setPost('bar');
-  const postNaN = getState().post === 0;
+  const postNaN = getState().post === DEFAULT_POST_MM;
 
   setCamera({yaw:-1, pitch:-0.5});
   const camNeg = getState().yaw === -1 && getState().pitch === -0.5;
@@ -58,8 +59,8 @@ export function testStateSetters(){
     {name:'height NaN clamps to 0', pass:heightNaN},
     {name:'depth negative clamps to 0', pass:depthNeg},
     {name:'depth NaN clamps to 0', pass:depthNaN},
-    {name:'post negative clamps to 0', pass:postNeg},
-    {name:'post NaN clamps to 0', pass:postNaN},
+    {name:'post negative resets to default', pass:postNeg},
+    {name:'post NaN resets to default', pass:postNaN},
     {name:'camera allows negative yaw/pitch', pass:camNeg},
     {name:'camera ignores invalid yaw/pitch', pass:camNaN},
     {name:'setBottomClear clamps to non-negative integer', pass:bottomClearClamps && bottomClearRounds}

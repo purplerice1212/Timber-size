@@ -6,9 +6,10 @@ import {computeLevels} from './utils/computeLevels.js';
 import {railXPositions} from './utils/railXPositions.js';
 import {autoHeightFromRows} from './utils/autoHeight.js';
 import {resolveBinHeightMm} from './utils/rowSizing.js';
+import {postSize} from './utils/post.js';
 
 export function buildModel(S) {
-  const P = S.post;
+  const P = postSize(S);
   const seg = segments(S);
   const ch = channels(S, seg);
   const levelData = computeLevels(S);
