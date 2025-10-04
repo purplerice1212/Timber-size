@@ -10,7 +10,8 @@ import {
   setBottomRowRails,
   setRailMode,
   setBinLipThickness,
-  toggleRearFrame
+  toggleRearFrame,
+  setBottomClear
 } from '../state.js';
 
 export function testStateSetters(){
@@ -37,6 +38,13 @@ export function testStateSetters(){
   setCamera({yaw:'a', pitch:'b'});
   const camNaN = getState().yaw === -1 && getState().pitch === -0.5;
 
+  const bottomClearStart = getState().bottomClear;
+  setBottomClear(-20);
+  const bottomClearClamps = getState().bottomClear === 0;
+  setBottomClear('17.6');
+  const bottomClearRounds = getState().bottomClear === 18;
+  setBottomClear(bottomClearStart);
+
   // restore original state
   setHeight(base.height);
   setDepth(base.depth);
@@ -53,7 +61,8 @@ export function testStateSetters(){
     {name:'post negative clamps to 0', pass:postNeg},
     {name:'post NaN clamps to 0', pass:postNaN},
     {name:'camera allows negative yaw/pitch', pass:camNeg},
-    {name:'camera ignores invalid yaw/pitch', pass:camNaN}
+    {name:'camera ignores invalid yaw/pitch', pass:camNaN},
+    {name:'setBottomClear clamps to non-negative integer', pass:bottomClearClamps && bottomClearRounds}
   );
 
   const baseRow = {...base.rows[1]};
