@@ -244,7 +244,7 @@ body {
 
 #controls {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: calc(var(--space) * 1.5);
   padding: calc(var(--space) * 2);
   border-radius: 20px;
@@ -254,18 +254,92 @@ body {
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
 }
 
-#controls label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+#controls > .grp {
+  grid-column: 1 / -1;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: calc(var(--space) * 1.5);
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  padding: calc(var(--space) * 1.25);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(241, 245, 249, 0.9), rgba(241, 245, 249, 0.4));
+  color: #0f172a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.field input {
+  width: 100%;
+}
+
+.field-title {
+  font-weight: 600;
   font-size: 0.95rem;
+}
+
+.field-hint {
+  font-size: 0.85rem;
   color: var(--text-muted);
 }
 
-#controls label > span,
-#controls label > strong {
-  font-weight: 600;
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: calc(var(--space) * 1);
+}
+
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: calc(var(--space) * 1.25);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: linear-gradient(160deg, rgba(241, 245, 249, 0.9), rgba(241, 245, 249, 0.4));
   color: #0f172a;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.toggle:hover {
+  border-color: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 4px 16px rgba(37, 99, 235, 0.1);
+}
+
+.toggle:active {
+  transform: translateY(1px);
+}
+
+.toggle input {
+  margin-top: 0.2rem;
+}
+
+.toggle-body {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.toggle-title {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.toggle-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 input[type="number"],
