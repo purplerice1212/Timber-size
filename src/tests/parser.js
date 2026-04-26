@@ -7,6 +7,11 @@ export function testParser(){
   const p1 = parseList(sampleText);
   const exp1 = [DEFAULT_POST_MM, DEFAULT_OPENING_MM, DEFAULT_POST_MM];
   const parsePass = exp1.every((n,i) => p1[i] === n);
+  const pThousands = parseList('1,200mm, 650, 1,200');
+  const thousandsPass = pThousands.length === 3
+    && pThousands[0] === 1200
+    && pThousands[1] === 650
+    && pThousands[2] === 1200;
 
   const p2 = normalizeSegments([
     DEFAULT_POST_MM,
@@ -27,6 +32,7 @@ export function testParser(){
 
   return [
     {name:'parseList basic', pass:parsePass},
+    {name:'parseList handles thousands separators', pass:thousandsPass},
     {name:'normalizeSegments dedup', pass:normPass},
     {name:'segments fallback honors post', pass:fallbackPass}
   ];
