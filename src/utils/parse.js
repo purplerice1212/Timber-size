@@ -1,11 +1,12 @@
 import {DEFAULT_POST_MM, DEFAULT_OPENING_MM} from '../config/defaults.js';
 
 export function parseList(txt, post = DEFAULT_POST_MM){
-  const re=/\b(\d+(?:\.\d+)?)\s*(?:mm)?\b/gi;
+  const re=/\b(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(?:mm)?\b/gi;
   const out=[]; let m;
   const str=String(txt);
   while((m=re.exec(str))){
-    const n=Math.ceil(parseFloat(m[1]));
+    const numeric = m[1].replaceAll(',', '');
+    const n=Math.ceil(parseFloat(numeric));
     if(Number.isFinite(n) && n>0) out.push(n);
   }
   if(out.length) return out;
